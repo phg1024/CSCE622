@@ -5,40 +5,30 @@
 #include <vector>
 using namespace std;
 
-template <typename iterator_category>
-void print_category_dispatch();
+template <class iterator_tag>
+struct iterator_name {};
 
-template <>
-void print_category_dispatch<input_iterator_tag>() {
-  cout << "Input iterator" << endl;
-}
+#define SPECIALIZE_ITERATOR_NAME_TEMPLATE(iterator_tag, name_string) \
+  template <> \
+  struct iterator_name<iterator_tag> { \
+    static const string value; \
+  }; \
+  const string iterator_name<iterator_tag>::value = name_string;
 
-template <>
-void print_category_dispatch<output_iterator_tag>() {
-  cout << "Output Iterator" << endl;
-}
-
-template <>
-void print_category_dispatch<forward_iterator_tag>() {
-  cout << "Forward Iterator" << endl;
-}
-
-template <>
-void print_category_dispatch<bidirectional_iterator_tag>() {
-  cout << "Bidirectional Iterator" << endl;
-}
-
-template <>
-void print_category_dispatch<random_access_iterator_tag>() {
-  cout << "Random Asscess Iterator" << endl;
-}
+SPECIALIZE_ITERATOR_NAME_TEMPLATE(input_iterator_tag, "Input Iterator")
+SPECIALIZE_ITERATOR_NAME_TEMPLATE(output_iterator_tag, "Output Iterator")
+SPECIALIZE_ITERATOR_NAME_TEMPLATE(forward_iterator_tag, "Forward Iterator")
+SPECIALIZE_ITERATOR_NAME_TEMPLATE(bidirectional_iterator_tag, "Bidirectional Iterator")
+SPECIALIZE_ITERATOR_NAME_TEMPLATE(random_access_iterator_tag, "Random Access Iterator")
 
 template <class Iterator>
 void print_category(Iterator x) {
-  print_category_dispatch<typename iterator_traits<Iterator>::iterator_category>();
+  using category = typename iterator_traits<Iterator>::iterator_category;
+  cout << iterator_name<category>::value << endl;
 }
 
 int main(int argc, char** argv) {
+
   {
     char a[10];
     print_category(a+10);

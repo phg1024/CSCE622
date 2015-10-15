@@ -219,9 +219,9 @@ Using this comparer, `dragdrop` can be written as
 template <typename BidirectionalIterator, typename UnaryPredicate>
 void dragdrop(BidirectionalIterator f, BidirectionalIterator l,
               BidirectionalIterator p, UnaryPredicate s) {
-  // sort the elements before p, so the elements satisfy s will be postfix of [f, p]            
+  // sort the elements in [f, p], so the elements satisfy s will be postfix of [f, p]            
   std::stable_sort(f, p, Comparer<UnaryPredicate>(s));
-  // sort the elements before p, so the elements satisfy s will be prefix of [p, l]            
+  // sort the elements in [p, l], so the elements satisfy s will be prefix of [p, l]            
   std::stable_sort(p, l, Comparer<Negate<UnaryPredicate>>(s));
 }
 ```
@@ -248,38 +248,27 @@ Using `std::iterator_traits`, this function can be written as
 ```
 template <class Iterator>
 void print_category(Iterator x) {
-  print_category_dispatch<typename iterator_traits<Iterator>::iterator_category>();
+  using category = typename iterator_traits<Iterator>::iterator_category;
+  cout << iterator_name<category>::value << endl;
 }
 ```
-where `print_category_dispatch` is a templated helper function with 5 specializations:
+where `iterator_name` is a templated helper class with 5 specializations:
 
 ```
-template <typename iterator_category>
-void print_category_dispatch();
+template <class iterator_tag>
+struct iterator_name {};
 
-template <>
-void print_category_dispatch<input_iterator_tag>() {
-  cout << "Input iterator" << endl;
-}
+#define SPECIALIZE_ITERATOR_NAME_TEMPLATE(iterator_tag, name_string) \
+  template <> \
+  struct iterator_name<iterator_tag> { \
+    static const string value; \
+  }; \
+  const string iterator_name<iterator_tag>::value = name_string;
 
-template <>
-void print_category_dispatch<output_iterator_tag>() {
-  cout << "Output Iterator" << endl;
-}
-
-template <>
-void print_category_dispatch<forward_iterator_tag>() {
-  cout << "Forward Iterator" << endl;
-}
-
-template <>
-void print_category_dispatch<bidirectional_iterator_tag>() {
-  cout << "Bidirectional Iterator" << endl;
-}
-
-template <>
-void print_category_dispatch<random_access_iterator_tag>() {
-  cout << "Random Asscess Iterator" << endl;
-}
+SPECIALIZE_ITERATOR_NAME_TEMPLATE(input_iterator_tag, "Input Iterator")
+SPECIALIZE_ITERATOR_NAME_TEMPLATE(output_iterator_tag, "Output Iterator")
+SPECIALIZE_ITERATOR_NAME_TEMPLATE(forward_iterator_tag, "Forward Iterator")
+SPECIALIZE_ITERATOR_NAME_TEMPLATE(bidirectional_iterator_tag, "Bidirectional Iterator")
+SPECIALIZE_ITERATOR_NAME_TEMPLATE(random_access_iterator_tag, "Random Access Iterator")
 ```
 See `p4.cpp` for a complete demonstration.
