@@ -1,5 +1,5 @@
 // To toggle the fixed version, change the following 0 to 1
-#define FIX_IT 0
+#define FIX_IT 1
 
 #include <iostream>
 using namespace std;

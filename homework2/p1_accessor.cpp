@@ -1,5 +1,5 @@
 // To toggle the fixed version, change the following 0 to 1
-#define FIX_IT 0
+#define FIX_IT 1
 
 #include <iostream>
 using namespace std;
@@ -35,7 +35,7 @@ bool contains(const ::array<T>& A, const T& element) {
 }
 
 int main(int argc, char** argv) {
-  // This does not compile
+  // This does not compile if FIX_IT is 0
   ::array<int> A(3);
   A[0] = 1; A[1] = 2; A[2] = 3;
 

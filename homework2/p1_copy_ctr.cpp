@@ -1,5 +1,5 @@
 // To toggle the fixed version, change the following 0 to 1
-#define FIX_IT 0
+#define FIX_IT 1
 
 #include <iostream>
 using namespace std;
@@ -14,7 +14,7 @@ public:
 #if FIX_IT
   array (const array& other) : data(new T[other.n]), n(other.n) {
     cout << "invoking copy constructor ..." << endl;
-    memcpy(data, other.data, sizeof(T)*n);
+    std::copy(data, data+n, other.data);
   }
 #endif
   ~array () { delete [] data; }

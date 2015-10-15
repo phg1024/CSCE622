@@ -1,6 +1,7 @@
 // To toggle the fixed version, change the following 0 to 1
 #define FIX_IT 1
 
+#include <assert.h>
 #include <iostream>
 using namespace std;
 
@@ -11,7 +12,7 @@ class array {
 
 public:
   array (int n_) : data(new T[n_]), n(n_) {}
-#if FIX_IT
+
   array (const array& other) : data(new T[other.n]), n(other.n) {
     cout << "invoking copy constructor ..." << endl;
     std::copy(data, data+n, other.data);
@@ -24,7 +25,23 @@ public:
     new(this) array(other);
     return (*this);
   }
+
+#if FIX_IT
+  array(array&& other) : data(other.data), n(other.n) {
+    cout << "invoking move constructor ..." << endl;
+    other.data = nullptr;
+  }
+
+  array& operator=(array&& other) {
+    cout << "invoking move assignment operator ..." << endl;
+    delete[] data;
+    std::swap(n, other.n);
+    std::swap(data, other.data);
+    other.data = nullptr;
+    return (*this);
+  }
 #endif
+
   ~array () { delete [] data; }
 
   friend bool operator==(const array<T>& v1, const array<T>& v2) {
@@ -38,29 +55,18 @@ public:
 };
 
 int main(int argc, char** argv) {
-  // use a nested scope to make sure a1 is destroyed at the end of this scope.
-  {
-    ::array<int> a1(3);
+  ::array<int> a(3);
+  auto memory_ptr = a.data_ptr();
 
-    // use a nested scope to make sure a2 is destroyed at the end of this scope.
-    // when a2 is destroyed, the memory block it holds is deallocated.
-    {
-      ::array<int> a2(1);
-      // invoke the copy assignment operator
-      a2 = a1;
+  auto f = [&]() {
+    auto b(std::move(a));
+    return b;
+  };
 
-      // This checks if the two arrays share the same memory block
-      if( a1.data_ptr() == a2.data_ptr() ) {
-        cout << "Both arrays share memory block: " << a1.data_ptr() << endl;
-      } else {
-        cout << "The arrays have different memory blocks: " << endl;
-        cout << "a1.data = " << a1.data_ptr() << endl;
-        cout << "a2.data = " << a2.data_ptr() << endl;
-      }
-    }
+  ::array<int> c = f(), d(5);
+  assert(c.data_ptr() == memory_ptr);
 
-    // a1 will be destroyed here, but it will crash the program because of its
-    // data pointer is dangling at this point.
-  }
+  d = std::move(c);
+  assert(d.data_ptr() == memory_ptr);
   return 0;
 }

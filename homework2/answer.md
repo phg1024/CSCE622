@@ -79,8 +79,7 @@ To fix it, add the following copy constructor:
 
 ```
 array (const array& other) : data(new T[other.n]), n(other.n) {
-  cout << "invoking copy assignment operator ..." << endl;
-  memcpy(data, other.data, sizeof(T)*n);
+  std::copy(data, data+n, other.data);
 }
 ```
 The memory copy operation is added to make sure the new copy has exactly the same elements as the source array.
@@ -118,17 +117,14 @@ This code fragment will crash the program because the memory block will be deall
 To fix it, add the following copy constructor:
 
 ```
-array& operator=(const array& other) {
-    if(&other != this) {
-      delete [] data;
-      n = other.n;
-      data = new T[n];
-      memcpy(data, other.data, sizeof(T)*n);
-    }
-    return (*this);
+array& operator=(const array& other){
+  if (this == &other) return *this;
+  delete[] data; data = nullptr;
+  new(this) array(other);
+  return (*this);
 }
 ```
-The memory copy operation is added to make sure the new copy has exactly the same elements as the source array.
+Note that this copy assignment operator depends on previously defined copy constructor to make a copy of the pass-by-value parameter.
 
 ##### Issue 4: Equality operator
 The definition of of the equality operator only compares the memory address of the data held by the array, but fails to check the whether the sizes of both arrays are the same. This could be problematic because it is possible two arrays share the same memory address while having different sizes.
@@ -157,7 +153,24 @@ friend bool operator!=(const array<T>& v1, const array<T>& v2) {
 ```
 See `p1_inequality_op.cpp` for a complete demonstration.
 
-##### Issue 6: Element accessor and `size()` function
+##### Issue 6: Move constructor and move assignment operator
+Since the compiler will not generate move constructor and move assignment operator, it would be sensible to add them to the class definition for efficient manipulation of large arrays:
+
+```
+  array(array&& other) : data(other.data), n(other.n) {
+    other.data = nullptr;
+  }
+
+  array& operator=(array&& other) {
+    delete[] data;
+    std::swap(n, other.n);
+    std::swap(data, other.data);
+    other.data = nullptr;
+    return (*this);
+  }
+```
+
+##### Issue 7: Element accessor and `size()` function
 Only reference version of element accessor is provided in the class definition; however, a const-reference version must be included for many generic algorithms to work properly.
 
 Consider the following function:
