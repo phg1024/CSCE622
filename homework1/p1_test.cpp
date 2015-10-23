@@ -1,3 +1,4 @@
+// Author: Peihong Guo
 #include "p1_triple.hpp"
 #include <cassert>
 

@@ -1,3 +1,4 @@
+// Author: Peihong Guo
 #ifndef TRIPLE_H_
 #define TRIPLE_H_
 

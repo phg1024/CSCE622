@@ -1,3 +1,4 @@
+// Author: Peihong Guo
 /*
  * To use this program:
  *   1. Compile it directly: the compilation will fail because is_zero is
