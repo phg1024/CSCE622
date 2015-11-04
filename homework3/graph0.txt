@@ -1,0 +1,24 @@
+14 20
+M N O P Q R S T U V W X Y Z
+0
+M Q
+M R
+M X
+N O
+N Q
+N U
+O R
+O S
+O V
+P O
+P S
+P Z
+Q T
+R Y
+S R
+U T
+V X
+V W
+W Z
+Y V
+P Z
