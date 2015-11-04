@@ -22,37 +22,28 @@ public:
   template <class Vertex, class Graph>
   void start_vertex(Vertex u, const Graph& g) {
     os << "start DFS from " << get(vertex_name, g, u) << std::endl;
-    // Initialize the path counts
-    auto vp = vertices(g);
-    std::for_each(vp.first, vp.second, [&](Vertex v) {
-      path_counter[v] = 0;
-    });
   }
 
   template <class Vertex, class Graph>
   void discover_vertex(Vertex u, const Graph& g) {
     os << "discover " << get(vertex_name, g, u) << std::endl;
-    if(u == t) path_counter[u] = 1;
-    else path_counter[u] = 0;
+    path_counter[u] = (u==t)?1:0;
   }
 
   template <class Vertex, class Graph>
   void finish_vertex(Vertex u, const Graph& g) {
-    os << "finish " << get(vertex_name, g, u) << std::endl;
+    os << "finish " << get(vertex_name, g, u) << ": ";
 
-    // Store intermediate results
-    if( u != t ) {
-      auto vp = adjacent_vertices(u, g);
-      path_counter[u] = std::accumulate(vp.first, vp.second, 0,
-        [&](size_t acc, Vertex v) {
-          return acc + path_counter[v];
-        });
-    }
+    auto vp = adjacent_vertices(u, g);
+    path_counter[u] += std::accumulate(vp.first, vp.second, 0,
+                                       [&](size_t acc, Vertex v) {
+                                         return acc + path_counter[v];
+                                       });
 
     // Store final result
     if( u == s ) path_count = path_counter[u];
 
-    os << get(vertex_name, g, u) << ": " << path_counter[u] << std::endl;
+    os << "path counts[" << get(vertex_name, g, u) << "] = " << path_counter[u] << std::endl;
   }
 
 private:
@@ -75,7 +66,7 @@ path_count(VertexListGraph& G,
   for(auto vp=vertices(G); vp.first!=vp.second; ++vp.first) {
     put(vertex_color, G, *vp.first, white_color);
   }
-  
+
   depth_first_visit(G, source,
                     PathCounter<VertexListGraph>(source, target, path_count, std::clog),
                     get(vertex_color, G),
