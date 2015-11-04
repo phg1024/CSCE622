@@ -1,10 +1,10 @@
+#include "graph_utils.h"
 #include "path_count.h"
 
 #include <fstream>
 #include <iostream>
 #include <iterator>
 using namespace std;
-
 
 template <typename Vertex, typename Graph>
 bool ReadGraphFromFile(const string& filename, Graph& g, map<string, Vertex>& vertex_map) {
@@ -48,29 +48,7 @@ bool ReadGraphFromFile(const string& filename, Graph& g, map<string, Vertex>& ve
   }
 
   // print out the vertices
-  {
-    auto index = get(vertex_index, g);
-
-    std::cout << "vertices(g) = ";
-    typedef typename graph_traits<Graph>::vertex_iterator vertex_iter;
-    std::pair<vertex_iter, vertex_iter> vp;
-    for (vp = vertices(g); vp.first != vp.second; ++vp.first)
-      std::cout << index[*vp.first] << ":" << name_map[*vp.first] <<  " ";
-    std::cout << std::endl;
-  }
-
-  // print out the edges
-  {
-    std::cout << "edges(g) = ";
-    typedef typename graph_traits<Graph>::edge_iterator edge_iter;
-    std::pair<edge_iter, edge_iter> ep;
-    for(ep = edges(g); ep.first != ep.second; ++ep.first) {
-      auto s = source(*ep.first, g);
-      auto t = target(*ep.first, g);
-      cout << "(" << name_map[s] << " -> " << name_map[t] << ")" << " ";
-    }
-    cout << endl;
-  }
+  PrintGraph(g);
 
   return true;
 }
@@ -97,11 +75,9 @@ int main(int argc, char** argv) {
                                property<vertex_name_t, string,
                                         property<vertex_color_t, default_color_type>>>;
   using VertexDescriptor = graph_traits<Graph>::vertex_descriptor;
-  using IndexMap = property_map<Graph, vertex_index_t>::type;
-  using NameMap = property_map<Graph, vertex_name_t>::type;
 
   if(argc<3) {
-    cout << "Usage: path_count graph_file query_file" << endl;
+    cout << "Usage: path_count_with_file graph_file query_file" << endl;
     return -1;
   } else {
     Graph g;

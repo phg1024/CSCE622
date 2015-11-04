@@ -10,5 +10,5 @@ find_package(Boost REQUIRED COMPONENTS graph)
 include_directories(${INCLUDE_DIRECTORIES} ${Boost_INCLUDE_DIRS})
 link_directories(${LINK_DIRECTORIES} ${Boost_LIBRARY_DIRS})
 
-add_executable(path_count main.cpp)
-target_link_libraries(path_count)
+add_executable(path_count_with_file path_count_with_file.cpp)
+add_executable(path_count_random_graph path_count_random_graph.cpp)
