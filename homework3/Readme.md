@@ -40,4 +40,4 @@ For example, to test the algorithm on a random graph with 5 nodes and 8 edges us
 path_count_random_graph 5 8 2
 ```
 
-`Note: to suppress the progress log, simply add 2>log.txt at the end of the command line.`
+*Note: to suppress the progress log, simply add 2>log.txt at the end of the command line.*
