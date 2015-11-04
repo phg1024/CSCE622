@@ -93,7 +93,7 @@ int main(int argc, char **argv) {
     return -1;
   }
 
-  srand(clock());
+  srand(time(NULL));
   Graph g = GenerateRandomGraph<Graph>(num_vertices, num_edges);
   cout << "graph generated." << endl;
   auto queries = GenerateQueries(g, num_queries);
