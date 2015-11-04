@@ -1,7 +1,10 @@
-cmake_minimum_required(VERSION 3.1)
+cmake_minimum_required(VERSION 2.6)
 project(path_count CXX)
 
-set(CMAKE_CXX_FLAGS "-std=c++0x ${CMAKE_CXX_FLAGS} -g")
+set(CMAKE_CXX_COMPILER g++)
+set(CMAKE_CXX_FLAGS "-std=c++11 ${CMAKE_CXX_FLAGS} -g")
+
+set(BOOST_LIBRARYDIR /usr/lib64)
 
 find_package(Boost REQUIRED COMPONENTS graph)
 include_directories(${INCLUDE_DIRECTORIES} ${Boost_INCLUDE_DIRS})
