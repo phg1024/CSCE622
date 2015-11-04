@@ -4,7 +4,7 @@
 </div>
 
 #### Introduction
-Blah blah blah
+In this assignment a path counting algorithm is implemented using the depth first search functionalities provided in the Boost graph library. By adding a proper visitor to perform path counting operations at several control points in the depth first search process, this algorithm is capable of finding the total number of different paths from a source vertex `s` to a target vertex `t` in linear time. Augmented with proper termination criteria, this algorithm only traverses the relevant part of the entire graph, which leads to superior performance compared to a topological sort based algorithm.
 
 #### Implementation Details
 ##### Graph Definition
@@ -114,5 +114,66 @@ where `n` is the number of vertices and `m` is the number of edges. Each edge `e
 ##### Random Graph Generation
 To generate random directed acyclic graph (DAG), it is important to make sure the edges do not form loops in the graph. This can be achieved by assigning ranks to the vertices and only allow edges from higher rank vertices to lower rank vertices.
 
-#### Summary
-Blah blah blah
+#### Experiment Result
+##### Example Graph in the Assignment
+The algorithm is able to produce correct output for the example graph in the assignment:
+```
+vertices(g) = 0:M 1:N 2:O 3:P 4:Q 5:R 6:S 7:T 8:U 9:V 10:W 11:X 12:Y 13:Z 
+edges(g) = (M -> Q) (M -> R) (M -> X) (N -> O) (N -> Q) (N -> U) (O -> R) (O -> S) (O -> V) (P -> O) (P -> S) (P -> Z) (Q -> T) (R -> Y) (S -> R) (U -> T) (V -> X) (V -> W) (W -> Z) (Y -> V) 
+2
+Finding paths from P to V
+start DFS from P
+discover P
+discover O
+discover R
+discover Y
+discover V
+finish V: path counts[V] = 1
+finish Y: path counts[Y] = 1
+finish R: path counts[R] = 1
+discover S
+finish S: path counts[S] = 1
+finish O: path counts[O] = 3
+discover Z
+finish Z: path counts[Z] = 0
+finish P: path counts[P] = 4
+Found paths:
+P -> O -> R -> Y -> V
+P -> O -> S -> R -> Y -> V
+P -> O -> V
+P -> S -> R -> Y -> V
+Path counting finished.
+Path count = 4
+```
+
+##### Random Graph
+Below is an example of random graph experiment.
+```
+peihongguo@linux2:~/Documents/Codes/CSCE622/homework3/build$ ./path_count_random_graph 8 15 1
+vertices(g) = 0:vertex 0 1:vertex 1 2:vertex 2 3:vertex 3 4:vertex 4 5:vertex 5 6:vertex 6 7:vertex 7 
+edges(g) = (vertex 1 -> vertex 0) (vertex 2 -> vertex 0) (vertex 3 -> vertex 2) (vertex 3 -> vertex 0) (vertex 3 -> vertex 1) (vertex 4 -> vertex 1) (vertex 5 -> vertex 4) (vertex 6 -> vertex 3) (vertex 6 -> vertex 5) (vertex 6 -> vertex 0) (vertex 6 -> vertex 2) (vertex 6 -> vertex 1) (vertex 7 -> vertex 4) (vertex 7 -> vertex 6) (vertex 7 -> vertex 3) 
+graph generated.
+Finding paths from vertex 6 to vertex 1
+start DFS from vertex 6
+discover vertex 6
+discover vertex 3
+discover vertex 2
+discover vertex 0
+finish vertex 0: path counts[vertex 0] = 0
+finish vertex 2: path counts[vertex 2] = 0
+discover vertex 1
+finish vertex 1: path counts[vertex 1] = 1
+finish vertex 3: path counts[vertex 3] = 1
+discover vertex 5
+discover vertex 4
+finish vertex 4: path counts[vertex 4] = 1
+finish vertex 5: path counts[vertex 5] = 1
+finish vertex 6: path counts[vertex 6] = 3
+Found paths:
+vertex 6 -> vertex 3 -> vertex 1
+vertex 6 -> vertex 5 -> vertex 4 -> vertex 1
+vertex 6 -> vertex 1
+Path counting finished.
+Path count = 3
+```
+
