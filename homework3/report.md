@@ -130,8 +130,9 @@ The algorithm is able to produce correct output for the example graph in the ass
 
 ```bash
 vertices(g) = 0:M 1:N 2:O 3:P 4:Q 5:R 6:S 7:T 8:U 9:V 10:W 11:X 12:Y 13:Z
-edges(g) = (M -> Q) (M -> R) (M -> X) (N -> O) (N -> Q) (N -> U) (O -> R) (O -> S) (O -> V) (P -> O) (P -> S) (P -> Z) (Q -> T) (R -> Y) (S -> R) (U -> T) (V -> X) (V -> W) (W -> Z) (Y -> V)
-2
+edges(g) = (M -> Q) (M -> R) (M -> X) (N -> O) (N -> Q) (N -> U) (O -> R)
+(O -> S) (O -> V) (P -> O) (P -> S) (P -> Z) (Q -> T) (R -> Y) (S -> R)
+(U -> T) (V -> X) (V -> W) (W -> Z) (Y -> V)
 Finding paths from P to V
 start DFS from P
 discover P
@@ -162,8 +163,13 @@ Below is an example of random graph experiment.
 
 ```bash
 peihongguo@linux2:~/Documents/Codes/CSCE622/homework3/build$ ./path_count_random_graph 8 15 1
-vertices(g) = 0:vertex 0 1:vertex 1 2:vertex 2 3:vertex 3 4:vertex 4 5:vertex 5 6:vertex 6 7:vertex 7
-edges(g) = (vertex 1 -> vertex 0) (vertex 2 -> vertex 0) (vertex 3 -> vertex 2) (vertex 3 -> vertex 0) (vertex 3 -> vertex 1) (vertex 4 -> vertex 1) (vertex 5 -> vertex 4) (vertex 6 -> vertex 3) (vertex 6 -> vertex 5) (vertex 6 -> vertex 0) (vertex 6 -> vertex 2) (vertex 6 -> vertex 1) (vertex 7 -> vertex 4) (vertex 7 -> vertex 6) (vertex 7 -> vertex 3)
+vertices(g) = 0:vertex 0 1:vertex 1 2:vertex 2 3:vertex 3 4:vertex 4 5:vertex 5
+6:vertex 6 7:vertex 7
+edges(g) = (vertex 1 -> vertex 0) (vertex 2 -> vertex 0) (vertex 3 -> vertex 2)
+(vertex 3 -> vertex 0) (vertex 3 -> vertex 1) (vertex 4 -> vertex 1)
+(vertex 5 -> vertex 4) (vertex 6 -> vertex 3) (vertex 6 -> vertex 5)
+(vertex 6 -> vertex 0) (vertex 6 -> vertex 2) (vertex 6 -> vertex 1)
+(vertex 7 -> vertex 4) (vertex 7 -> vertex 6) (vertex 7 -> vertex 3)
 graph generated.
 Finding paths from vertex 6 to vertex 1
 start DFS from vertex 6
