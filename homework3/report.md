@@ -9,6 +9,7 @@ In this assignment a path counting algorithm is implemented using the depth firs
 #### Implementation Details
 ##### Graph Definition
 The graph used in this assignment is defined using the `adjacency_list` structure with 2 vertex properties: vertex name and vertex color.
+
 ```
 using Graph = adjacency_list<
                 listS, vecS, directedS,
@@ -27,6 +28,7 @@ In `finish_vertex`, the path count of a vertex is set to the sum of path counts 
 The algorithm terminates once the source vertex is finished.
 
 The visitor is designed based on the above observation:
+
 1. The visitor inherits from `default_dfs_visitor` to provide default behavior for the events other than the `discover_vertex` and `finish_vertex`.
 2. A `map<Vertex, int>` object is included as a member of the visitor to store the path counts at each vertex. A `map<Vertex, vector<list<string>>>` object is also added to the visitor to store the found paths.
 3. The final path count is made available through a reference to external path count variable.
@@ -61,16 +63,23 @@ private:
 ```
 
 `discover_vertex` is a simple function that marks the path count of a vertex based on whether it is the target vertex or not:
+
 ```
 template <class Vertex, class Graph>
 void discover_vertex(Vertex u, const Graph& g) {
-  path_counter[u] = (u==t)?1:0;
-  paths[u] = (u==t)?vector<path_t>(1, path_t(1, u)):vector<path_t>();
+  if(u==t) {
+    path_counter[u] = 1;
+    paths[u] = vector<path_t>(1, path_t(1, u));
+  } else {
+    path_counter[u] = 0;
+    paths[u] = vector<path_t>();
+  }
 }
 ```
 Note that the found paths are also updated in a similar way as the path count.
 
 `finish_vertex` needs to sum up the path counts of a vertex's descendants and use that as its new path count:
+
 ```
 template <class Vertex, class Graph>
 void finish_vertex(Vertex u, const Graph& g) {
@@ -100,6 +109,7 @@ The found paths are also updated based on the found paths stored in the descenda
 
 ##### Graph File Format
 The graph files used in the assignment follows the format below
+
 ```
 n m
 v1_name v2_name ... vertex_n_name
@@ -117,6 +127,7 @@ To generate random directed acyclic graph (DAG), it is important to make sure th
 #### Experiment Result
 ##### Example Graph in the Assignment
 The algorithm is able to produce correct output for the example graph in the assignment:
+
 ```
 vertices(g) = 0:M 1:N 2:O 3:P 4:Q 5:R 6:S 7:T 8:U 9:V 10:W 11:X 12:Y 13:Z 
 edges(g) = (M -> Q) (M -> R) (M -> X) (N -> O) (N -> Q) (N -> U) (O -> R) (O -> S) (O -> V) (P -> O) (P -> S) (P -> Z) (Q -> T) (R -> Y) (S -> R) (U -> T) (V -> X) (V -> W) (W -> Z) (Y -> V) 
@@ -148,6 +159,7 @@ Path count = 4
 
 ##### Random Graph
 Below is an example of random graph experiment.
+
 ```
 peihongguo@linux2:~/Documents/Codes/CSCE622/homework3/build$ ./path_count_random_graph 8 15 1
 vertices(g) = 0:vertex 0 1:vertex 1 2:vertex 2 3:vertex 3 4:vertex 4 5:vertex 5 6:vertex 6 7:vertex 7 
