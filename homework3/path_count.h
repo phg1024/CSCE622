@@ -5,12 +5,14 @@
 #include <vector>
 #include <list>
 #include <string>
+#include <map>
 
+#include <boost/algorithm/string/join.hpp>
 #include <boost/graph/adjacency_list.hpp>
 #include <boost/graph/depth_first_search.hpp>
 #include <boost/graph/graph_traits.hpp>
 #include <boost/graph/properties.hpp>
-#include <boost/algorithm/string/join.hpp> 
+#include <boost/property_map/property_map.hpp>
 using namespace boost;
 
 template <typename VertexListGraph>
@@ -34,19 +36,19 @@ public:
 
   template <class Vertex, class Graph>
   void start_vertex(Vertex u, const Graph& g) {
-    os << "start DFS from " << get(vertex_name, g, u) << std::endl;
+    os << "start DFS from " << g[u].name << std::endl;
   }
 
   template <class Vertex, class Graph>
   void discover_vertex(Vertex u, const Graph& g) {
-    os << "discover " << get(vertex_name, g, u) << std::endl;
+    os << "discover " << g[u].name << std::endl;
     path_counter[u] = (u==t)?1:0;
-    paths[u] = (u==t)?std::vector<path_t>(1, path_t(1, get(vertex_name, g, u))):std::vector<path_t>();
+    paths[u] = (u==t)?std::vector<path_t>(1, path_t(1, g[u].name)):std::vector<path_t>();
   }
 
   template <class Vertex, class Graph>
   void finish_vertex(Vertex u, const Graph& g) {
-    os << "finish " << get(vertex_name, g, u) << ": ";
+    os << "finish " << g[u].name << ": ";
 
     // Update the path count
     auto vp = adjacent_vertices(u, g);
@@ -60,7 +62,7 @@ public:
     for(auto vp = adjacent_vertices(u, g); vp.first != vp.second; ++vp.first) {
       const auto& paths_v = paths[*vp.first];
       for(auto p : paths_v) {
-        path_t this_path(1, get(vertex_name, g, u));
+        path_t this_path(1, g[u].name);
         this_path.insert(this_path.end(), p.begin(), p.end());
         paths_u.push_back(this_path);
       }
@@ -69,7 +71,7 @@ public:
     // Store final result
     if( u == s ) path_count = path_counter[u];
 
-    os << "path counts[" << get(vertex_name, g, u) << "] = " << path_counter[u] << std::endl;
+    os << "path counts[" << g[u].name << "] = " << path_counter[u] << std::endl;
   }
 
 private:
@@ -86,17 +88,21 @@ path_count(VertexListGraph& G,
            typename graph_traits<VertexListGraph>::vertex_descriptor source,
            typename graph_traits<VertexListGraph>::vertex_descriptor target)
 {
-  typename graph_traits<VertexListGraph>::edges_size_type path_count;
+  typedef typename graph_traits<VertexListGraph>::vertex_descriptor vertex_desc;
+
+  std::map<vertex_desc, default_color_type> vertex2color;
+  boost::associative_property_map<std::map<vertex_desc, default_color_type>> color_map(vertex2color);
 
   // Initialize the graph, set all nodes to white
   // This is necessary because this algorithm calls depth_first_visit directly instead of depth_first_search
   for(auto vp=vertices(G); vp.first!=vp.second; ++vp.first) {
-    put(vertex_color, G, *vp.first, white_color);
+    vertex2color.insert(std::make_pair(*vp.first, white_color));
   }
 
+  typename graph_traits<VertexListGraph>::edges_size_type path_count;
   depth_first_visit(G, source,
                     PathCounter<VertexListGraph>(source, target, path_count, std::clog),
-                    get(vertex_color, G),
+                    color_map,
                     [&](typename graph_traits<VertexListGraph>::vertex_descriptor u,
                         const VertexListGraph&) { return u == target; });
   std::cout << "Path counting finished." << std::endl;

@@ -4,19 +4,28 @@
 #include <map>
 using namespace std;
 
+struct NamedVertex {
+  NamedVertex() {}
+  NamedVertex(const string& name) : name(name) {}
+
+  string name;
+};
+
+struct edge_t {
+  edge_t() {}
+};
+
 template <typename Graph>
 Graph GenerateRandomGraph(int num_vertices, int num_edges) {
   Graph g;
   typedef typename graph_traits<Graph>::vertex_descriptor VertexDescriptor;
   map<string, VertexDescriptor> vertex_map;
   vector<string> names(num_vertices);
-  auto name_map = get(vertex_name, g);
 
   // Add vertices
   for(int i=0;i<num_vertices;++i) {
-    auto vi = add_vertex(g);
     string name_i = "vertex " + std::to_string(i);
-    name_map[vi] = name_i;
+    auto vi = add_vertex(NamedVertex(name_i), g);
     vertex_map[name_i] = vi;
     names[i] = name_i;
   }
@@ -63,16 +72,14 @@ GenerateQueries(const Graph& g, int num_queries) {
 template <typename Vertex, typename Graph>
 void ProcessQueries(Graph& g, const vector<pair<Vertex, Vertex>>& queries) {
   for(auto& query : queries) {
-    cout << "Finding paths from " << get(vertex_name, g, query.first)
-         << " to " << get(vertex_name, g, query.second) << endl;
+    cout << "Finding paths from " << g[query.first].name
+         << " to " << g[query.second].name << endl;
     cout << "Path count = " << path_count(g, query.first, query.second) << endl;
   }
 }
 
 int main(int argc, char **argv) {
-  using Graph = adjacency_list<listS, vecS, directedS,
-                               property<vertex_name_t, string,
-                                        property<vertex_color_t, default_color_type>>>;
+  using Graph = adjacency_list<listS, vecS, directedS, NamedVertex>;
   using VertexDescriptor = graph_traits<Graph>::vertex_descriptor;
   if(argc < 4) {
     cout << "Usage: path_count_random_graph num_vertices num_edges num_queries" << endl;

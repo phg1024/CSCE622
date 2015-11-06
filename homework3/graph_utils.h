@@ -13,15 +13,13 @@ using namespace boost;
 
 template <typename Graph>
 void PrintGraph(const Graph& g) {
-  auto name_map = get(vertex_name, g);
   {
     auto index = get(vertex_index, g);
-
     std::cout << "vertices(g) = ";
     typedef typename graph_traits<Graph>::vertex_iterator vertex_iter;
     std::pair<vertex_iter, vertex_iter> vp;
     for (vp = vertices(g); vp.first != vp.second; ++vp.first)
-      std::cout << index[*vp.first] << ":" << name_map[*vp.first] <<  " ";
+      std::cout << index[*vp.first] << ":" << g[*vp.first].name <<  " ";
     std::cout << std::endl;
   }
 
@@ -33,7 +31,7 @@ void PrintGraph(const Graph& g) {
     for(ep = edges(g); ep.first != ep.second; ++ep.first) {
       auto s = source(*ep.first, g);
       auto t = target(*ep.first, g);
-      std::cout << "(" << name_map[s] << " -> " << name_map[t] << ")" << " ";
+      std::cout << "(" << g[s].name << " -> " << g[t].name << ")" << " ";
     }
     std::cout << std::endl;
   }

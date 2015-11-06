@@ -1,6 +1,5 @@
 14 20
 M N O P Q R S T U V W X Y Z
-0
 M Q
 M R
 M X

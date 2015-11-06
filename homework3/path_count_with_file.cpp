@@ -6,6 +6,13 @@
 #include <iterator>
 using namespace std;
 
+struct NamedVertex {
+  NamedVertex() {}
+  NamedVertex(const string& name) : name(name) {}
+
+  string name;
+};
+
 template <typename Vertex, typename Graph>
 bool ReadGraphFromFile(const string& filename, Graph& g, map<string, Vertex>& vertex_map) {
   ifstream fin(filename);
@@ -16,35 +23,17 @@ bool ReadGraphFromFile(const string& filename, Graph& g, map<string, Vertex>& ve
   int num_vertices, num_edges;
   fin >> num_vertices >> num_edges;
 
-  auto name_map = get(vertex_name, g);
-
   for(int i=0;i<num_vertices;++i) {
     string name;
     fin >> name;
-    auto vi = add_vertex(g);
+    auto vi = add_vertex(NamedVertex(name), g);
     vertex_map[name] = vi;
-    name_map[vi] = name;
   }
 
-  int edge_desc_type;
-  fin >> edge_desc_type;
-  switch(edge_desc_type) {
-    case 0: {
-      for(int i=0;i<num_edges;++i) {
-        string from_vertex, to_vertex;
-        fin >> from_vertex >> to_vertex;
-        add_edge(vertex_map[from_vertex], vertex_map[to_vertex], g);
-      }
-      break;
-    }
-    case 1: {
-      for(int i=0;i<num_edges;++i) {
-        int from_idx, to_idx;
-        fin >> from_idx >> to_idx;
-        add_edge(from_idx, to_idx, g);
-      }
-      break;
-    }
+  for(int i=0;i<num_edges;++i) {
+    string from_vertex, to_vertex;
+    fin >> from_vertex >> to_vertex;
+    add_edge(vertex_map[from_vertex], vertex_map[to_vertex], g);
   }
 
   // print out the vertices
@@ -58,7 +47,7 @@ void ProcessQueries(Graph& g, const map<string, Vertex>& vertex_map, const vecto
   for(auto& query : queries) {
     Vertex s = vertex_map.at(query.first);
     Vertex t = vertex_map.at(query.second);
-    cout << "Finding paths from " << get(vertex_name, g, s) << " to " << get(vertex_name, g, t) << endl;
+    cout << "Finding paths from " << g[s].name << " to " << g[t].name << endl;
     cout << "Path count = " << path_count(g, s, t) << endl;
   }
 }
@@ -71,9 +60,7 @@ istream& operator>>(istream& is, pair<string, string>& p) {
 }
 
 int main(int argc, char** argv) {
-  using Graph = adjacency_list<listS, vecS, directedS,
-                               property<vertex_name_t, string,
-                                        property<vertex_color_t, default_color_type>>>;
+  using Graph = adjacency_list<listS, vecS, directedS, NamedVertex>;
   using VertexDescriptor = graph_traits<Graph>::vertex_descriptor;
 
   if(argc<3) {
