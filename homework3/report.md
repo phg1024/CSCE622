@@ -8,14 +8,16 @@ In this assignment a path counting algorithm is implemented using the depth firs
 
 #### Implementation Details
 ##### Graph Definition
-The graph used in this assignment is defined using the `adjacency_list` structure with 2 vertex properties: vertex name and vertex color.
+The graph used in this assignment is defined using the `adjacency_list` structure with `NamedVertex` as vertex and default edge.
 
 ```cpp
-using Graph = adjacency_list<
-                listS, vecS, directedS,
-                property<vertex_name_t, string,
-                  property<vertex_color_t, default_color_type>>
-              >;
+struct NamedVertex {
+  NamedVertex() {}
+  NamedVertex(const string& name) : name(name) {}
+  string name;
+};
+
+using Graph = adjacency_list<listS, vecS, directedS, NamedVertex>;
 ```
 
 ##### Visitor Design
@@ -69,7 +71,7 @@ template <class Vertex, class Graph>
 void discover_vertex(Vertex u, const Graph& g) {
   if(u==t) {
     path_counter[u] = 1;
-    paths[u] = vector<path_t>(1, path_t(1, u));
+    paths[u] = vector<path_t>(1, path_t(1, g[u].name));
   } else {
     path_counter[u] = 0;
     paths[u] = vector<path_t>();
@@ -95,7 +97,7 @@ void finish_vertex(Vertex u, const Graph& g) {
   for(auto vp = adjacent_vertices(u, g); vp.first != vp.second; ++vp.first) {
     const auto& paths_v = paths[*vp.first];
     for(auto p : paths_v) {
-      path_t this_path(1, get(vertex_name, g, u));
+      path_t this_path(1, g[u].name);
       this_path.insert(this_path.end(), p.begin(), p.end());
       paths_u.push_back(this_path);
     }
@@ -107,19 +109,61 @@ void finish_vertex(Vertex u, const Graph& g) {
 ```
 The found paths are also updated based on the found paths stored in the descendants of this vertex.
 
+##### Algorithm Details
+With the visitor described in previous section, the path count algorithm is simply
+a depth first search in the graph with early termination. The termination condition for each traversal path is whether the target vertex is reached or not, which can be implemented using a lambda function:
+
+```cpp
+auto terminator = [&](vertex_desc u, const VertexListGraph&) { return u == target; };
+```
+
+Putting everything together, the final algorithm is implemented as below:
+
+```cpp
+template <typename VertexListGraph>
+typename graph_traits<VertexListGraph>::edges_size_type
+path_count(VertexListGraph& G,
+           typename graph_traits<VertexListGraph>::vertex_descriptor source,
+           typename graph_traits<VertexListGraph>::vertex_descriptor target)
+{
+  typedef typename graph_traits<VertexListGraph>::vertex_descriptor vertex_desc;
+
+  // The color map used in the DFS traversal
+  std::map<vertex_desc, default_color_type> vertex2color;
+  boost::associative_property_map<std::map<vertex_desc, default_color_type>> color_map(vertex2color);
+
+  // Initialize the graph, set all nodes to white
+  // This is necessary because this algorithm calls depth_first_visit directly
+  // instead of depth_first_search
+  for(auto vp=vertices(G); vp.first!=vp.second; ++vp.first) {
+    vertex2color.insert(std::make_pair(*vp.first, white_color));
+  }
+
+  // Final path count
+  typename graph_traits<VertexListGraph>::edges_size_type path_count;
+
+  // Execute DFS traversal
+  depth_first_visit(G, source,
+                    PathCounter<VertexListGraph>(source, target, path_count, std::clog),
+                    color_map,
+                    [&](vertex_desc u, const VertexListGraph&) { return u == target; });
+  std::cout << "Path counting finished." << std::endl;
+  return path_count;
+}
+```
+
 ##### Graph File Format
 The graph files used in the assignment follows the format below
 
 ```
 n m
 v1_name v2_name ... vertex_n_name
-0
 e1
 e2
 ...
 em
 ```
-where `n` is the number of vertices and `m` is the number of edges. Each edge `ek` is a pair of vertex names. For example, `a b` represents an edge from vertex `a` to vertex `b`. The `0` between vertex names and edge list is a placeholder for future use.
+where `n` is the number of vertices and `m` is the number of edges. Each edge `ek` is a pair of vertex names. For example, `a b` represents an edge from vertex `a` to vertex `b`.
 
 ##### Random Graph Generation
 To generate random directed acyclic graph (DAG), it is important to make sure the edges do not form loops in the graph. This can be achieved by assigning ranks to the vertices and only allow edges from higher rank vertices to lower rank vertices.

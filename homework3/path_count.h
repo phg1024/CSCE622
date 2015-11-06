@@ -42,8 +42,13 @@ public:
   template <class Vertex, class Graph>
   void discover_vertex(Vertex u, const Graph& g) {
     os << "discover " << g[u].name << std::endl;
-    path_counter[u] = (u==t)?1:0;
-    paths[u] = (u==t)?std::vector<path_t>(1, path_t(1, g[u].name)):std::vector<path_t>();
+    if(u==t) {
+      path_counter[u] = 1;
+      paths[u] = std::vector<path_t>(1, path_t(1, g[u].name));
+    } else {
+      path_counter[u] = 0;
+      paths[u] = std::vector<path_t>();
+    }
   }
 
   template <class Vertex, class Graph>
@@ -103,8 +108,7 @@ path_count(VertexListGraph& G,
   depth_first_visit(G, source,
                     PathCounter<VertexListGraph>(source, target, path_count, std::clog),
                     color_map,
-                    [&](typename graph_traits<VertexListGraph>::vertex_descriptor u,
-                        const VertexListGraph&) { return u == target; });
+                    [&](vertex_desc u, const VertexListGraph&) { return u == target; });
   std::cout << "Path counting finished." << std::endl;
   return path_count;
 }

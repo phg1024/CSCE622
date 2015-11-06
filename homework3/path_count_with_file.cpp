@@ -78,7 +78,6 @@ int main(int argc, char** argv) {
     vector<query_t> queries;
     ifstream query_file(argv[2]);
     std::copy(istream_iterator<query_t>(query_file), istream_iterator<query_t>(), back_inserter(queries));
-    cout << queries.size() << endl;
     ProcessQueries(g, vertex_map, queries);
 
     return 0;
