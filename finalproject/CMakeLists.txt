@@ -25,6 +25,10 @@ link_directories(${LINK_DIRECTORIES} ${GLUT_LIBRARY_DIRS})
 
 add_executable(mesh_simplification mesh_simplification.cpp)
 target_link_libraries(mesh_simplification stringutils meshloader ${OPENGL_LIBRARIES} ${GLEW_LIBRARIES} ${GLUT_LIBRARIES})
+
+add_executable(test_hds test_hds.cpp)
+target_link_libraries(test_hds stringutils meshloader ${OPENGL_LIBRARIES} ${GLEW_LIBRARIES} ${GLUT_LIBRARIES})
+
 add_library(stringutils stringutils.cpp)
 add_library(meshloader meshloader.cpp)
 target_link_libraries(meshloader stringutils)
