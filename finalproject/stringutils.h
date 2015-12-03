@@ -6,6 +6,8 @@
 #include <vector>
 #include <sstream>
 #include <iostream>
+#include <algorithm>
+#include <numeric>
 using namespace std;
 
 enum CaseSensitivity{
