@@ -29,7 +29,7 @@ bool stringComp(const string& s1, const string& s2, CaseSensitivity cs)
 
 stringlist split(const string& line, const string& sep) {
     stringlist sl;
-    int pos = 0;
+    size_t pos = 0;
     while( pos < line.size() )
     {
         int lpos = pos;
@@ -69,7 +69,7 @@ bool contains(const string& str, const string& substr) {
     return (str.find_first_of(substr) != string::npos);
 }
 
-string padWith(const string& str, char c, int L) {
+string padWith(const string& str, char c, unsigned int L) {
     string res = str;
     while( res.length() < L ) {
         res = c + res;

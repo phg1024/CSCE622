@@ -111,7 +111,7 @@ void MeshLoader::estimateNormals()
         pidx = j-1;
         if( pidx < 0 ) pidx += faces[i].v.size();
         nidx = j+1;
-        if( nidx > faces[i].v.size() - 1 ) nidx -= faces[i].v.size();
+        if( nidx > static_cast<int>(faces[i].v.size()) - 1 ) nidx -= faces[i].v.size();
 
         glm::vec3 vp, vc, vn;
         vp = verts[faces[i].v[pidx]];
