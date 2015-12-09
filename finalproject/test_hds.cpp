@@ -25,6 +25,7 @@ int main(int argc, char** argv) {
   // Load the mesh
   if(argc <= 1) {
     cout << "Usage: ./mesh_simplification mesh_file" << endl;
+    return -1;
   }
   string filename(argv[1]);
   loader.load(filename);

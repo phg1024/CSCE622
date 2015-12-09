@@ -1,7 +1,11 @@
 #include "meshloader.h"
-#include "stringutils.h"
 
+#include <boost/algorithm/string/split.hpp>
+#include <boost/algorithm/string/classification.hpp>
+
+#include <iostream>
 #include <fstream>
+#include <sstream>
 using namespace std;
 
 void MeshLoader::clear() {
@@ -163,8 +167,8 @@ bool OBJLoader::load(const string& filename) {
       string identifier;
       sline >> identifier;
 
-      //cout << identifier << endl;
-      //cout << line << endl;
+      cout << identifier << endl;
+      cout << line << endl;
 
       if( identifier == "v" )
       {
@@ -182,10 +186,9 @@ bool OBJLoader::load(const string& filename) {
         int vidx, vtidx, vnidx;
         while( sline >> vstr )
         {
-          stringlist vlist;
           /// obj file starts indexing vertices from 1
-
-          vlist = split(vstr, "/");
+          vector<string> vlist;
+          vlist = boost::split(vlist, vstr, boost::is_any_of("/"));
 
           auto vit = vlist.begin();
 
