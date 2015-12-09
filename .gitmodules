@@ -1,0 +1,3 @@
+[submodule "finalproject/third_party/Catch"]
+	path = finalproject/third_party/Catch
+	url = ../../philsquared/Catch.git
