@@ -29,12 +29,8 @@ find_package(GLUT REQUIRED)
 include_directories(${GLUT_INCLUDE_DIR})
 link_directories(${LINK_DIRECTORIES} ${GLUT_LIBRARY_DIRS})
 
-add_library(meshloader meshloader.cpp)
+add_executable(test_hds test_hds.cpp)
+target_link_libraries(test_hds meshloader ${OPENGL_LIBRARIES} ${GLEW_LIBRARIES} ${GLUT_LIBRARIES})
 
-add_executable(mesh_simplification mesh_simplification.cpp)
-target_link_libraries(mesh_simplification meshloader ${OPENGL_LIBRARIES} ${GLEW_LIBRARIES} ${GLUT_LIBRARIES})
-
-include( CGAL_CreateSingleSourceCGALProgram )
-create_single_source_cgal_program( "mesh_simplification_cgal.cpp" )
-
-add_subdirectory(tests)
+include_directories(..)
+link_directories(..)
