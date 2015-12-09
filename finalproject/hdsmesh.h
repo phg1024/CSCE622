@@ -146,7 +146,7 @@ public:
   typedef typename HalfEdgeDataStructureTraits::const_face_iterator const_face_iterator;
 
   size_t size_of_vertices() const { return boost::num_vertices(g); }
-  size_t size_of_halfedges() const { return boost::num_edges(g) * 2; }
+  size_t size_of_halfedges() const { return boost::num_edges(g); }
   size_t size_of_facets() const { return g[graph_bundle].face_index_map.size(); }
 
   vertex_descriptor add_vertex(const VertexProperty& vp) {
@@ -434,7 +434,7 @@ ostream& operator<<(ostream& os, const HalfEdgeDataStructure<VertexProperty, Edg
   }
   os << endl;
 
-  os << hds.size_of_facets() << " faces circulation, incident edges: " << endl;
+  os << "faces circulation, incident edges: " << endl;
   const_face_iterator fit, fend;
   for(tie(fit, fend) = hds.faces(); fit != fend; ++fit) {
     edge_circulator circ = hds.incident_edges(*fit);
@@ -446,7 +446,7 @@ ostream& operator<<(ostream& os, const HalfEdgeDataStructure<VertexProperty, Edg
     os << endl;
   }
 
-  os << hds.size_of_facets() << " faces circulation, incident vertices: " << endl;
+  os << "faces circulation, incident vertices: " << endl;
   for(tie(fit, fend) = hds.faces(); fit != fend; ++fit) {
     vertex_circulator circ = hds.incident_vertices(*fit);
     os << "face " << *fit << ": ";
