@@ -17,6 +17,9 @@ find_package(Boost REQUIRED COMPONENTS graph)
 include_directories(${INCLUDE_DIRECTORIES} ${Boost_INCLUDE_DIRS})
 link_directories(${LINK_DIRECTORIES} ${Boost_LIBRARY_DIRS})
 
+find_package(Eigen3 REQUIRED)
+include_directories(${EIGEN3_INCLUDE_DIR})
+
 find_package(OpenGL REQUIRED)
 include_directories(${OPENGL_INCLUDE_DIR})
 link_directories(${LINK_DIRECTORIES} ${OPENGL_LIBRARY_DIRS})

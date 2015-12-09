@@ -67,25 +67,48 @@ struct DefaultHalfedgeDataStructureTraits {
   typedef graph_traits<g<NullType, NullType, NullType>>::vertex_descriptor vertex_descriptor;
   typedef graph_traits<g<NullType, NullType, NullType>>::edge_descriptor edge_descriptor;
   typedef graph_traits<g<NullType, NullType, NullType>>::edge_descriptor halfedge_descriptor;
-  typedef unsigned int face_descriptor;
+  struct face_descriptor_t {
+    face_descriptor_t() {}
+    face_descriptor_t(std::size_t idx) : idx(idx) {}
+    bool operator==(const face_descriptor_t &other) const {
+      return idx == other.idx;
+    }
+    unsigned int idx;
+  };
+  typedef face_descriptor_t face_descriptor;
+  struct face_descriptor_hasher_t {
+    std::size_t operator()(const face_descriptor& k) const {
+      return std::hash<unsigned int>()(k.idx);
+    }
+  };
+  typedef face_descriptor_hasher_t face_descriptor_hasher;
 
   typedef HDSVertex<edge_descriptor, VertexProperty> vertex_type;
   typedef HDSEdge<edge_descriptor, vertex_descriptor, face_descriptor, EdgeProperty> edge_type;
   typedef HDSFace<edge_descriptor, FaceProperty> face_type;
 
-  typedef std::vector<face_type> face_set;
+  typedef std::unordered_map<face_descriptor, unsigned int, face_descriptor_hasher> face_index_map_t;
+  typedef std::vector<face_descriptor> face_descriptor_set_t;
+  typedef std::vector<face_type> face_set_t;
+  struct face_properties {
+    face_properties() : face_index(0) {}
+    unsigned int face_index;
+    face_descriptor_set_t face_descriptors;
+    face_index_map_t face_index_map;
+    face_set_t face_set;
+  };
 
   typedef VertexProperty vertex_property_type;
   typedef EdgeProperty edge_property_type;
   typedef FaceProperty face_property_type;
 
-  typedef g<vertex_type, edge_type, face_set> graph_type;
+  typedef g<vertex_type, edge_type, face_properties> graph_type;
 
   typedef typename graph_traits<graph_type>::vertex_iterator vertex_iterator;
   typedef typename graph_traits<graph_type>::edge_iterator edge_iterator;
   typedef typename graph_traits<graph_type>::edge_iterator halfedge_iterator;
-  typedef typename face_set::iterator face_iterator;
-  typedef typename face_set::const_iterator const_face_iterator;
+  typedef typename face_descriptor_set_t::iterator face_iterator;
+  typedef typename face_descriptor_set_t::const_iterator const_face_iterator;
 };
 
 template <typename VertexProperty, typename EdgeProperty, typename FaceProperty,
@@ -105,6 +128,8 @@ public:
   typedef typename HalfEdgeDataStructureTraits::edge_descriptor edge_descriptor;
   typedef typename HalfEdgeDataStructureTraits::halfedge_descriptor halfedge_descriptor;
   typedef typename HalfEdgeDataStructureTraits::face_descriptor face_descriptor;
+
+  typedef typename HalfEdgeDataStructureTraits::face_descriptor_hasher face_descriptor_hasher;
 
   typedef typename HalfEdgeDataStructureTraits::vertex_type vertex_type;
   typedef typename HalfEdgeDataStructureTraits::edge_type edge_type;
@@ -129,7 +154,7 @@ public:
 
   size_t size_of_vertices() const { return boost::num_vertices(g); }
   size_t size_of_halfedges() const { return boost::num_edges(g) * 2; }
-  size_t size_of_facets() const { return g[graph_bundle].size(); }
+  size_t size_of_facets() const { return g[graph_bundle].face_index_map.size(); }
 
   vertex_descriptor add_vertex(const VertexProperty& vp) {
     return boost::add_vertex(vertex_type(vp), g);
@@ -141,8 +166,12 @@ public:
   }
 
   face_descriptor add_face(edge_descriptor e, const FaceProperty& fp) {
-    g[graph_bundle].push_back(face_type(e, fp));
-    return g[graph_bundle].size() - 1;
+    face_descriptor descriptor{g[graph_bundle].face_index};
+    ++g[graph_bundle].face_index;
+    g[graph_bundle].face_set.push_back(face_type(e, fp));
+    g[graph_bundle].face_descriptors.push_back(descriptor);
+    g[graph_bundle].face_index_map[descriptor] = g[graph_bundle].face_set.size() - 1;
+    return descriptor;
   }
 
   vertex_property_type& operator[](vertex_descriptor v) {
@@ -176,13 +205,13 @@ public:
   }
 
   pair<face_iterator, face_iterator> faces() {
-    return make_pair(g[graph_bundle].begin(), g[graph_bundle].end());
+    return make_pair(g[graph_bundle].face_descriptors.begin(),
+                     g[graph_bundle].face_descriptors.end());
   }
 
   pair<const_face_iterator, const_face_iterator> faces() const {
-    return make_pair(g[graph_bundle].cbegin(), g[graph_bundle].cend());
-
-    //return make_pair(g[graph_bundle].cbegin(), g[graph_bundle].cend());
+    return make_pair(g[graph_bundle].face_descriptors.cbegin(),
+                     g[graph_bundle].face_descriptors.cend());
   }
 
   edge_descriptor next(edge_descriptor he) {
@@ -214,9 +243,10 @@ public:
     }
 
     edge_circulator_t operator++(int) {
+      edge_circulator_t cpy = *this;
       cur = vis(cur, g);
       cycled = (cur == he);
-      return (*this);
+      return cpy;
     }
 
     edge_descriptor operator*() { return cur; }
@@ -238,13 +268,6 @@ public:
                            });
   }
 
-  edge_circulator incident_edges(const face_type& f) const {
-    return edge_circulator(f.he, g,
-                           [](edge_descriptor e, const graph_type& g) {
-                             return g[e].next;
-                           });
-  }
-
   edge_circulator incident_edges(vertex_descriptor v) const {
     return edge_circulator(halfedge(v), g,
                            [](edge_descriptor e, const graph_type& g) {
@@ -252,7 +275,51 @@ public:
                            });
   }
 
+  class face_circulator_t {
+  public:
+    face_circulator_t(edge_descriptor he, const graph_type& g)
+      : cycled(false), he(he), cur(he), g(g) {}
+
+    face_circulator_t& operator=(face_circulator_t other) {
+      std::swap(*this, other);
+      return *this;
+    }
+
+    operator bool() const {
+      return !cycled;
+    }
+
+    face_circulator_t& operator++() {
+      cur = g[g[cur].flip].next;
+      cycled = (cur == he);
+      return (*this);
+    }
+
+    face_circulator_t operator++(int) {
+      face_circulator_t cpy = *this;
+      cur = g[g[cur].flip].next;
+      cycled = (cur == he);
+      return cpy;
+    }
+
+    face_descriptor operator*() { return g[cur].f; }
+  private:
+    bool cycled;
+    edge_descriptor he;
+    edge_descriptor cur;
+    const graph_type& g;
+  };
+  typedef face_circulator_t face_circulator;
+
+  face_circulator incident_faces(vertex_descriptor v) const {
+    return face_circulator(halfedge(v), g);
+  }
+
   vertex_property_type& vertex(edge_descriptor he) {
+    return g[g[he].v].prop;
+  }
+
+  const vertex_property_type& vertex(edge_descriptor he) const {
     return g[g[he].v].prop;
   }
 
@@ -260,8 +327,18 @@ public:
     return boost::edge(u, v, g);
   }
 
+  edge_descriptor halfedge(face_descriptor f) {
+    unsigned int idx = g[graph_bundle].face_index_map[f];
+    return g[graph_bundle].face_set[idx].he;
+  }
+
   edge_descriptor halfedge(face_descriptor f) const {
-    return g[graph_bundle][f].he;
+    unsigned int idx = g[graph_bundle].face_index_map.at(f);
+    return g[graph_bundle].face_set[idx].he;
+  }
+
+  edge_descriptor halfedge(vertex_descriptor v) {
+    return g[v].he;
   }
 
   edge_descriptor halfedge(vertex_descriptor v) const {
@@ -335,7 +412,7 @@ public:
         assert(flip_edge_pair.second);
         mesh.g[edge_pair.first].flip = flip_edge_pair.first;
 
-        clog << &mesh.g[edge_pair.first] << ":: " << u << ", " << faces[i] << ", " << edge_pair.first << ": "
+        clog << &mesh.g[edge_pair.first] << ":: " << u << ", " << faces[i].idx << ", " << edge_pair.first << ": "
              << mesh.g[edge_pair.first].prev << "\t"
              << mesh.g[edge_pair.first].next << "\t"
              << mesh.g[edge_pair.first].flip << endl;

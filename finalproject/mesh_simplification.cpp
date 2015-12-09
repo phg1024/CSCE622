@@ -1,6 +1,6 @@
 #include "meshloader.h"
 #include "hdsmesh.h"
-#include "priority_queue.h"
+#include "meshsimplifier.h"
 
 #include <GL/glut.h>
 
@@ -31,7 +31,7 @@ int main(int argc, char** argv) {
   std::cout << "Initial number of edges: " << hds.size_of_halfedges() / 2 << "\n";
   std::cout << "Initial number of faces: " << hds.size_of_facets() << "\n";
 
-  int r = 0;
+  int r = MeshSimplifier<HDSMesh>::simplify(hds);
 
   std::cout << "\nFinished...\n" << r << " edges removed.\n"
             << (hds.size_of_halfedges()/2) << " final edges.\n" ;
