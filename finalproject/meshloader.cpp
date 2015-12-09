@@ -66,8 +66,7 @@ void MeshLoader::triangulate(){
   cout << "done.";
 }
 
-void MeshLoader::estimateNormals()
-{
+void MeshLoader::estimateNormals() {
   if( hasVertexNormal )
   {
     cout << "already has vertex normal ..." << endl;
@@ -145,109 +144,117 @@ istream& operator>>(istream& is, glm::vec2& v) {
   return is;
 }
 
+OBJLoader::OBJLoader(istream& is) {
+  LoadFromStream(is);
+}
+
+OBJLoader::OBJLoader(const string& filename) {
+  load(filename);
+}
+
+bool OBJLoader::LoadFromStream(istream& file) {
+  clear();
+
+  triangulated = true;
+
+  while (file) {
+    string line;
+    getline(file, line);
+
+    stringstream sline;
+    sline << line;
+
+    string identifier;
+    sline >> identifier;
+
+    cout << identifier << endl;
+    cout << line << endl;
+
+    if( identifier == "v" )
+    {
+      //cout << "vertex" << endl;
+      vert_t p;
+      sline >> p;
+      //cout << p << endl;
+      verts.push_back( p );
+    }
+    else if( identifier == "f" )
+    {
+      //cout << "face" << endl;
+      face_t f;
+      string vstr;
+      int vidx, vtidx, vnidx;
+      while( sline >> vstr )
+      {
+        /// obj file starts indexing vertices from 1
+        vector<string> vlist;
+        vlist = boost::split(vlist, vstr, boost::is_any_of("/"));
+
+        auto vit = vlist.begin();
+
+        vidx = atoi((*vit).c_str());
+        vit++;
+        if( vidx < 0 ) vidx = -vidx;
+        f.v.push_back(vidx - 1);
+
+        if( vit != vlist.end() )
+        {
+          vtidx = atoi((*vit).c_str());
+          vit++;
+          if( vtidx < 0 ) vtidx = -vtidx;
+          #undef max
+          f.t.push_back(std::max(vtidx - 1, 0));
+
+        }
+        if( vit != vlist.end() )
+        {
+          vnidx = atoi((*vit).c_str());
+          if( vnidx < 0 ) vnidx = -vnidx;
+          f.n.push_back(std::max(vnidx - 1, 0));
+        }
+        //cout << vidx << ", ";
+      }
+      //cout << endl;
+
+      triangulated &= (f.v.size() <= 3);
+
+      faces.push_back(f);
+    }
+    else if( identifier == "vt" )
+    {
+      hasVertexTexCoord = true;
+      //cout << "vertex texture" << endl;
+      texcoord_t p;
+      sline >> p;
+      //cout << p << endl;
+      texcoords.push_back( p );
+    }
+    else if( identifier == "vn" )
+    {
+      hasVertexNormal = true;
+      //cout << "vertex normal" << endl;
+      norm_t n;
+      sline >> n;
+      //cout << p << endl;
+      normals.push_back( n );
+    }
+  }
+
+  if(!triangulated) triangulate();
+
+  cout << "# faces = " << faces.size() << endl;
+  cout << "# vertices = " << verts.size() << endl;
+
+  return true;
+}
+
 bool OBJLoader::load(const string& filename) {
   try{
     ifstream file(filename.c_str());
-    if( !file ) {
-      cerr << "Failed to open file " << filename << endl;
-      return false;
-    }
-
-    clear();
-
-    triangulated = true;
-
-    while (file) {
-      string line;
-      getline(file, line);
-
-      stringstream sline;
-      sline << line;
-
-      string identifier;
-      sline >> identifier;
-
-      cout << identifier << endl;
-      cout << line << endl;
-
-      if( identifier == "v" )
-      {
-        //cout << "vertex" << endl;
-        vert_t p;
-        sline >> p;
-        //cout << p << endl;
-        verts.push_back( p );
-      }
-      else if( identifier == "f" )
-      {
-        //cout << "face" << endl;
-        face_t f;
-        string vstr;
-        int vidx, vtidx, vnidx;
-        while( sline >> vstr )
-        {
-          /// obj file starts indexing vertices from 1
-          vector<string> vlist;
-          vlist = boost::split(vlist, vstr, boost::is_any_of("/"));
-
-          auto vit = vlist.begin();
-
-          vidx = atoi((*vit).c_str());
-          vit++;
-          if( vidx < 0 ) vidx = -vidx;
-          f.v.push_back(vidx - 1);
-
-          if( vit != vlist.end() )
-          {
-            vtidx = atoi((*vit).c_str());
-            vit++;
-            if( vtidx < 0 ) vtidx = -vtidx;
-            #undef max
-            f.t.push_back(std::max(vtidx - 1, 0));
-
-          }
-          if( vit != vlist.end() )
-          {
-            vnidx = atoi((*vit).c_str());
-            if( vnidx < 0 ) vnidx = -vnidx;
-            f.n.push_back(std::max(vnidx - 1, 0));
-          }
-          //cout << vidx << ", ";
-        }
-        //cout << endl;
-
-        triangulated &= (f.v.size() <= 3);
-
-        faces.push_back(f);
-      }
-      else if( identifier == "vt" )
-      {
-        hasVertexTexCoord = true;
-        //cout << "vertex texture" << endl;
-        texcoord_t p;
-        sline >> p;
-        //cout << p << endl;
-        texcoords.push_back( p );
-      }
-      else if( identifier == "vn" )
-      {
-        hasVertexNormal = true;
-        //cout << "vertex normal" << endl;
-        norm_t n;
-        sline >> n;
-        //cout << p << endl;
-        normals.push_back( n );
-      }
-    }
-
-    file.close();
-
-    if(!triangulated) triangulate();
-
+    if( !file ) { throw std::logic_error("Failed to open file " + filename); }
+    if(!LoadFromStream(file)) { throw std::logic_error("Failed to parse obj file " + filename); }
     cout << "finish loading file " << filename << endl;
-    cout << "# faces = " << faces.size() << endl;
-    cout << "# vertices = " << verts.size() << endl;
-
+    file.close();
     return true;
   }
   catch( exception e )

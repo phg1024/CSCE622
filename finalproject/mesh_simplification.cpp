@@ -20,8 +20,7 @@ int main(int argc, char** argv) {
     cout << "Usage: ./mesh_simplification input_mesh_file output_mesh_file" << endl;
   }
   string filename(argv[1]);
-  OBJLoader loader;
-  loader.load(filename);
+  OBJLoader loader(filename);
 
   // Build the HDS mesh
   typedef HalfEdgeDataStructure<point_t, weight_t, color_t> HDSMesh;
@@ -31,7 +30,8 @@ int main(int argc, char** argv) {
   std::cout << "Initial number of edges: " << hds.size_of_halfedges() / 2 << "\n";
   std::cout << "Initial number of faces: " << hds.size_of_facets() << "\n";
 
-  int r = MeshSimplifier<HDSMesh>::simplify(hds);
+  //int r = MeshSimplifier<HDSMesh>::simplify(hds);
+  int r = 0;
 
   std::cout << "\nFinished...\n" << r << " edges removed.\n"
             << (hds.size_of_halfedges()/2) << " final edges.\n" ;

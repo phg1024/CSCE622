@@ -1,7 +1,7 @@
-#include "meshloader.h"
 #include "hdsmesh.h"
 
 #include <iostream>
+#include <fstream>
 #include <string>
 using namespace std;
 
@@ -11,7 +11,6 @@ struct color_t {
 };
 using weight_t = double;
 
-OBJLoader loader;
 HalfEdgeDataStructure<point_t, weight_t, color_t> hds;
 
 namespace std {
@@ -28,11 +27,10 @@ int main(int argc, char** argv) {
     return -1;
   }
   string filename(argv[1]);
-  loader.load(filename);
+  ifstream fin(filename);
+  // Load and build the HDS mesh
+  fin >> hds;
 
-  // Build the HDS mesh
-  hds = build_half_edge_mesh<point_t, weight_t, color_t>(loader.getFaces(), loader.getVerts());
   cout << hds << endl;
-
   return 0;
 }
