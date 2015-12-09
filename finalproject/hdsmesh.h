@@ -2,6 +2,8 @@
 #define HDSMESH_H
 
 #include "meshloader.h"
+#include "taggedvalue.h"
+#include "circulators.h"
 
 #include <iostream>
 #include <vector>
@@ -14,41 +16,6 @@ using namespace std;
 #include <boost/graph/adjacency_list.hpp>
 #include <boost/property_map/property_map.hpp>
 using namespace boost;
-
-// Helper class for face descriptors
-template <typename ValueType, typename TagType>
-struct TaggedValue {
-  typedef ValueType value_t;
-  typedef TagType tag_t;
-
-  TaggedValue() = default;
-  TaggedValue(const ValueType& value_in) : value(value_in) {}
-
-  ValueType& operator*() { return value; }
-  const ValueType& operator*() const { return value; }
-
-  bool operator==(const TaggedValue& other) const {
-    return value == other.value;
-  }
-
-  template <typename VT, typename TT>
-  friend ostream& operator<<(ostream& os, const TaggedValue<VT, TT>& val);
-
-  ValueType value;
-};
-
-template <typename VT, typename TT>
-ostream& operator<<(ostream& os, const TaggedValue<VT, TT>& val) {
-  os << *val;
-  return os;
-}
-
-template <typename TaggedValue>
-struct TaggedValueHasher {
-  std::size_t operator()(const TaggedValue& value) const {
-    return std::hash<typename TaggedValue::value_t>()(*value);
-  }
-};
 
 // * Each vertex has an out-going halfedge
 //  Implement this using bundled vertex property
@@ -140,6 +107,8 @@ template <typename VertexProperty, typename EdgeProperty, typename FaceProperty,
 class HalfEdgeDataStructure {
 public:
   HalfEdgeDataStructure() {}
+
+  typedef HalfEdgeDataStructure<VertexProperty, EdgeProperty, FaceProperty, HalfEdgeDataStructureTraits> self;
 
   typedef typename HalfEdgeDataStructureTraits::graph_type graph_type;
   typedef HalfEdgeDataStructureTraits traits;
@@ -246,43 +215,11 @@ public:
     return g[he].prev;
   }
 
-  class edge_circulator_t {
-  public:
-    edge_circulator_t(edge_descriptor he, const graph_type& g, std::function<edge_descriptor(edge_descriptor, const graph_type&)> vis)
-      : cycled(false), he(he), cur(he), g(g), vis(vis) {}
-
-    edge_circulator_t& operator=(edge_circulator_t other) {
-      std::swap(*this, other);
-      return *this;
-    }
-
-    operator bool() const {
-      return !cycled;
-    }
-
-    edge_circulator_t& operator++() {
-      cur = vis(cur, g);
-      cycled = (cur == he);
-      return (*this);
-    }
-
-    edge_circulator_t operator++(int) {
-      edge_circulator_t cpy = *this;
-      cur = vis(cur, g);
-      cycled = (cur == he);
-      return cpy;
-    }
-
-    edge_descriptor operator*() { return cur; }
-  private:
-    bool cycled;
-    edge_descriptor he;
-    edge_descriptor cur;
-    const graph_type& g;
-    std::function<edge_descriptor(edge_descriptor, const graph_type&)> vis;
+  struct edge_visitor {
+    typedef edge_descriptor value_type;
+    edge_descriptor operator()(edge_descriptor e, const graph_type&) { return e; }
   };
-
-  typedef edge_circulator_t edge_circulator;
+  typedef EdgeCirculator<self, edge_visitor> edge_circulator;
 
   edge_circulator incident_edges(face_descriptor f) const {
     return edge_circulator(halfedge(f), g,
@@ -298,45 +235,41 @@ public:
                            });
   }
 
-  class face_circulator_t {
-  public:
-    face_circulator_t(edge_descriptor he, const graph_type& g)
-      : cycled(false), he(he), cur(he), g(g) {}
-
-    face_circulator_t& operator=(face_circulator_t other) {
-      std::swap(*this, other);
-      return *this;
+  struct face_visitor {
+    typedef face_descriptor value_type;
+    face_descriptor operator()(edge_descriptor e, const graph_type& g) {
+      return g[e].f;
     }
-
-    operator bool() const {
-      return !cycled;
-    }
-
-    face_circulator_t& operator++() {
-      cur = g[g[cur].flip].next;
-      cycled = (cur == he);
-      return (*this);
-    }
-
-    face_circulator_t operator++(int) {
-      face_circulator_t cpy = *this;
-      cur = g[g[cur].flip].next;
-      cycled = (cur == he);
-      return cpy;
-    }
-
-    face_descriptor operator*() { return g[cur].f; }
-
-  private:
-    bool cycled;
-    edge_descriptor he;
-    edge_descriptor cur;
-    const graph_type& g;
   };
-  typedef face_circulator_t face_circulator;
+  typedef EdgeCirculator<self, face_visitor> face_circulator;
 
   face_circulator incident_faces(vertex_descriptor v) const {
-    return face_circulator(halfedge(v), g);
+    return face_circulator(halfedge(v), g,
+                           [](edge_descriptor e, const graph_type& g) {
+                             return g[g[e].flip].next;
+                           });
+  }
+
+  struct vertex_visitor {
+    typedef vertex_descriptor value_type;
+    vertex_descriptor operator()(edge_descriptor e, const graph_type& g) {
+      return g[e].v;
+    }
+  };
+  typedef EdgeCirculator<self, vertex_visitor> vertex_circulator;
+
+  vertex_circulator neighbor_vertices(vertex_descriptor v) const {
+    return vertex_circulator(flip(halfedge(v)), g,
+                             [](edge_descriptor e, const graph_type& g) {
+                               return g[g[e].next].flip;
+                             });
+  }
+
+  vertex_circulator incident_vertices(face_descriptor f) const {
+    return vertex_circulator(halfedge(f), g,
+                             [](edge_descriptor e, const graph_type& g) {
+                               return g[e].next;
+                             });
   }
 
   vertex_property_type& vertex(edge_descriptor he) {
@@ -367,6 +300,14 @@ public:
 
   edge_descriptor halfedge(vertex_descriptor v) const {
     return g[v].he;
+  }
+
+  edge_descriptor flip(edge_descriptor e) {
+    return g[e].flip;
+  }
+
+  edge_descriptor flip(edge_descriptor e) const {
+    return g[e].flip;
   }
 
   static HalfEdgeDataStructure build(const vector<MeshLoader::face_t> &inFaces,
@@ -478,6 +419,7 @@ ostream& operator<<(ostream& os, const HalfEdgeDataStructure<VertexProperty, Edg
   typedef typename mesh_t::const_face_iterator const_face_iterator;
   typedef typename mesh_t::edge_circulator edge_circulator;
   typedef typename mesh_t::face_circulator face_circulator;
+  typedef typename mesh_t::vertex_circulator vertex_circulator;
 
   os << hds.size_of_vertices() << " vertices: " << endl;
   auto verts = hds.vertices();
@@ -492,10 +434,21 @@ ostream& operator<<(ostream& os, const HalfEdgeDataStructure<VertexProperty, Edg
   }
   os << endl;
 
-  os << hds.size_of_facets() << " faces: " << endl;
+  os << hds.size_of_facets() << " faces circulation, incident edges: " << endl;
   const_face_iterator fit, fend;
   for(tie(fit, fend) = hds.faces(); fit != fend; ++fit) {
     edge_circulator circ = hds.incident_edges(*fit);
+    os << "face " << *fit << ": ";
+    while(circ) {
+      os << *circ << "; ";
+      circ++;
+    }
+    os << endl;
+  }
+
+  os << hds.size_of_facets() << " faces circulation, incident vertices: " << endl;
+  for(tie(fit, fend) = hds.faces(); fit != fend; ++fit) {
+    vertex_circulator circ = hds.incident_vertices(*fit);
     os << "face " << *fit << ": ";
     while(circ) {
       os << *circ << "; ";
@@ -518,6 +471,17 @@ ostream& operator<<(ostream& os, const HalfEdgeDataStructure<VertexProperty, Edg
   os << "vertex circulation, incident faces: " << endl;
   for(auto vit = verts.first; vit != verts.second; ++vit) {
     face_circulator circ = hds.incident_faces(*vit);
+    os << "vertex " << *vit << ": ";
+    while(circ) {
+      os << (*circ) << "; ";
+      ++circ;
+    }
+    os << endl;
+  }
+
+  os << "vertex circulation, neighboring vertices: " << endl;
+  for(auto vit = verts.first; vit != verts.second; ++vit) {
+    vertex_circulator circ = hds.neighbor_vertices(*vit);
     os << "vertex " << *vit << ": ";
     while(circ) {
       os << (*circ) << "; ";
