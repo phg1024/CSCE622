@@ -1,6 +1,6 @@
 [submodule "finalproject/third_party/Catch"]
 	path = finalproject/third_party/Catch
-	url = ../../philsquared/Catch.git
+	url = https://github.com/philsquared/Catch.git
 [submodule "finalproject/third_party/tinyobjloader"]
 	path = finalproject/third_party/tinyobjloader
 	url = https://github.com/syoyo/tinyobjloader.git
