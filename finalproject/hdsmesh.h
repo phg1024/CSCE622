@@ -16,6 +16,7 @@ using namespace std;
 #include <boost/graph/graph_traits.hpp>
 #include <boost/graph/adjacency_list.hpp>
 #include <boost/property_map/property_map.hpp>
+#include <boost/timer/timer.hpp>
 using namespace boost;
 
 // * Each vertex has an out-going halfedge
@@ -69,8 +70,9 @@ struct NullType {};
 
 template <typename VertexProperty, typename EdgeProperty, typename FaceProperty>
 struct DefaultHalfedgeDataStructureTraits {
+
   template <typename VP, typename EP, typename GP>
-  using g = adjacency_list<listS, vecS, bidirectionalS, VP, EP, GP>;
+  using g = adjacency_list<listS, listS, bidirectionalS, VP, EP, GP>;
 
   typedef graph_traits<g<NullType, NullType, NullType>>::vertex_descriptor vertex_descriptor;
   typedef graph_traits<g<NullType, NullType, NullType>>::edge_descriptor edge_descriptor;
@@ -383,27 +385,27 @@ public:
     return g[e].flip;
   }
 
-  static HalfEdgeDataStructure build(const vector<MeshLoader::face_t> &inFaces,
-             const vector<MeshLoader::vert_t> &inVerts) {
-    HalfEdgeDataStructure mesh;
+  static void build(const vector<MeshLoader::face_t> &inFaces,
+             const vector<MeshLoader::vert_t> &inVerts,
+             HalfEdgeDataStructure& mesh) {
+    boost::timer::auto_cpu_timer t("hds built in %w seconds.\n");
 
     // add all vertices
     vector<vertex_descriptor> verts(inVerts.size());
     for(size_t i=0;i<inVerts.size();++i) {
       verts[i] = mesh.add_vertex(inVerts[i]);
     }
-    clog << "vertices added." << endl;
+    //clog << "vertices added." << endl;
 
     // add all edges
     for(auto f : inFaces) {
       for(size_t j=0;j<f.v.size();++j) {
         int jn = (j+1)%f.v.size();
         auto u = verts[f.v[j]], v = verts[f.v[jn]];
-        double w = glm::length(mesh[u] - mesh[v]);
-        mesh.add_edge(u, v, w);
+        mesh.add_edge(u, v, edge_property_type());
       }
     }
-    clog << "edges added." << endl;
+    //clog << "edges added." << endl;
 
     // add all faces
     vector<face_descriptor> faces(inFaces.size());
@@ -413,16 +415,16 @@ public:
       auto edge_pair = mesh.edge(u, v);
       assert(edge_pair.second);
       faces[i] = mesh.add_face(edge_pair.first, FaceProperty());
-      clog << edge_pair.first << endl;
+      //clog << edge_pair.first << endl;
     }
-    clog << "faces added." << endl;
+    //clog << "faces added." << endl;
 
     // fix the half edge binding for each vertex
     for(vertex_iterator vit = mesh.vertices(); vit; ++vit) {
-      clog << *vit << endl;
+      //clog << *vit << endl;
       mesh.g[*vit].he =  *(out_edges(*vit, mesh.g).first);
     }
-    clog << "half edge binding for vertices fixed." << endl;
+    //clog << "half edge binding for vertices fixed." << endl;
 
     // fix the half edges
     // link the prev and next half edges, set the incident vertex and face
@@ -432,32 +434,31 @@ public:
         int jn = (j+1)>=static_cast<int>(f.v.size())?0:j+1;
         int jp = (j-1)<0?(j-1+f.v.size()):j-1;
 
-        auto u = verts[f.v[j]], v = verts[f.v[jn]];
-        auto edge_pair = mesh.edge(u, v);
+        auto vj = verts[f.v[j]], vjn = verts[f.v[jn]], vjp = verts[f.v[jp]];
+
+        auto edge_pair = mesh.edge(vj, vjn);
         assert(edge_pair.second);
-        mesh.g[edge_pair.first].v = u;
+        mesh.g[edge_pair.first].v = vj;
         mesh.g[edge_pair.first].f = faces[i];
 
-        auto next_edge_pair = mesh.edge(verts[f.v[jn]], verts[f.v[jp]]);
+        auto next_edge_pair = mesh.edge(vjn, vjp);
         assert(next_edge_pair.second);
         mesh.g[edge_pair.first].next = next_edge_pair.first;
 
-        auto prev_edge_pair = mesh.edge(verts[f.v[jp]], verts[f.v[j]]);
+        auto prev_edge_pair = mesh.edge(vjp, vj);
         assert(prev_edge_pair.second);
         mesh.g[edge_pair.first].prev = prev_edge_pair.first;
 
-        auto flip_edge_pair = mesh.edge(v, u);
+        auto flip_edge_pair = mesh.edge(vjn, vj);
         assert(flip_edge_pair.second);
         mesh.g[edge_pair.first].flip = flip_edge_pair.first;
 
-        clog << &mesh.g[edge_pair.first] << ":: " << u << ", " << *faces[i] << ", " << edge_pair.first << ": "
-             << mesh.g[edge_pair.first].prev << "\t"
-             << mesh.g[edge_pair.first].next << "\t"
-             << mesh.g[edge_pair.first].flip << endl;
+        //clog << &mesh.g[edge_pair.first] << ":: " << u << ", " << *faces[i] << ", " << edge_pair.first << ": "
+        //     << mesh.g[edge_pair.first].prev << "\t"
+        //     << mesh.g[edge_pair.first].next << "\t"
+        //     << mesh.g[edge_pair.first].flip << endl;
       }
     }
-
-    return mesh;
   }
 
   template <typename VP, typename EP, typename FP>
@@ -482,7 +483,7 @@ template <typename VertexProperty, typename EdgeProperty, typename FaceProperty>
 istream& operator>>(istream& is, HalfEdgeDataStructure<VertexProperty, EdgeProperty, FaceProperty>& hds) {
   typedef HalfEdgeDataStructure<VertexProperty, EdgeProperty, FaceProperty> mesh_type;
   OBJLoader loader(is);
-  hds = mesh_type::build(loader.getFaces(), loader.getVerts());
+  mesh_type::build(loader.getFaces(), loader.getVerts(), hds);
   return is;
 }
 

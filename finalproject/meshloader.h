@@ -15,9 +15,7 @@ public:
   struct face_t {
     face_t() {
       // at least 3 vertices
-      v.reserve(8);
-      n.reserve(8);
-      t.reserve(8);
+      v.reserve(3);
     }
     vector<int> v, n, t;
     glm::vec3 normal;

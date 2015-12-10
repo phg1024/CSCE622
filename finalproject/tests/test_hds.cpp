@@ -11,8 +11,6 @@ struct color_t {
 };
 using weight_t = double;
 
-HalfEdgeDataStructure<point_t, weight_t, color_t> hds;
-
 namespace std {
 ostream& operator<<(ostream& os, glm::vec3 v) {
   os << "(" << v.x << ", " << v.y << ", " << v.z << ")";
@@ -27,14 +25,18 @@ int main(int argc, char** argv) {
     return -1;
   }
   string filename(argv[1]);
-  ifstream fin(filename);
-  // Load and build the HDS mesh
-  fin >> hds;
+  OBJLoader loader(filename);
 
-  cout << hds << endl;
+  {
+    HalfEdgeDataStructure<point_t, NullType, NullType> hds;
+    HalfEdgeDataStructure<point_t, NullType, NullType>::build(loader.getFaces(), loader.getVerts(), hds);
 
-  auto vit = hds.vertices();
-  hds.remove_vertex(*vit);
-  cout << hds << endl;
+    std::cout << "# faces = " << hds.size_of_facets() << "\n";
+    std::cout << "# vertices = " << hds.size_of_vertices() << "\n";
+
+    if(argc > 2) {
+      cout << hds << endl;
+    }
+  }
   return 0;
 }

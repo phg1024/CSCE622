@@ -2,6 +2,7 @@
 
 #include <boost/algorithm/string/split.hpp>
 #include <boost/algorithm/string/classification.hpp>
+#include <boost/timer/timer.hpp>
 
 #include <iostream>
 #include <fstream>
@@ -14,10 +15,10 @@ void MeshLoader::clear() {
   texcoords.clear();
   normals.clear();
 
-  verts.reserve(131076);
-  normals.reserve(131076);
-  texcoords.reserve(131076);
-  faces.reserve(131076*2);
+  verts.reserve(4096);
+  normals.reserve(4096);
+  texcoords.reserve(4096);
+  faces.reserve(8192);
 }
 
 void MeshLoader::triangulate(){
@@ -153,6 +154,7 @@ OBJLoader::OBJLoader(const string& filename) {
 }
 
 bool OBJLoader::LoadFromStream(istream& file) {
+  boost::timer::auto_cpu_timer t("mesh loaded in %w seconds.\n");
   clear();
 
   triangulated = true;
@@ -167,8 +169,8 @@ bool OBJLoader::LoadFromStream(istream& file) {
     string identifier;
     sline >> identifier;
 
-    cout << identifier << endl;
-    cout << line << endl;
+    //cout << identifier << endl;
+    //cout << line << endl;
 
     if( identifier == "v" )
     {
