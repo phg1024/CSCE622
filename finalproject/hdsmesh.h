@@ -4,6 +4,7 @@
 #include "meshloader.h"
 #include "taggedvalue.h"
 #include "circulators.h"
+#include "iterators.h"
 
 #include <iostream>
 #include <vector>
@@ -32,8 +33,10 @@ using namespace boost;
 
 template <typename HalfedgeDescriptor, typename VertexProperty>
 struct HDSVertex {
-  HDSVertex() {}
-  HDSVertex(const VertexProperty& vp) : prop(vp) {}
+  HDSVertex() : valid(true) {}
+  HDSVertex(const VertexProperty& vp) : valid(true), prop(vp) {}
+
+  bool valid;
   HalfedgeDescriptor he;
   VertexProperty prop;
 };
@@ -41,9 +44,10 @@ struct HDSVertex {
 template <typename HalfedgeDescriptor, typename VertexDescriptor,
           typename FaceDescriptor, typename EdgeProperty>
 struct HDSEdge {
-  HDSEdge() {}
-  HDSEdge(const EdgeProperty& ep) : prop(ep) {}
+  HDSEdge() : valid(true) {}
+  HDSEdge(const EdgeProperty& ep) : valid(true), prop(ep) {}
 
+  bool valid;
   VertexDescriptor v;
   FaceDescriptor f;
   HalfedgeDescriptor flip, prev, next;
@@ -52,9 +56,11 @@ struct HDSEdge {
 
 template <typename HalfedgeDescriptor, typename FaceProperty>
 struct HDSFace {
-  HDSFace() {}
-  HDSFace(const FaceProperty& fp) : prop(fp) {}
-  HDSFace(HalfedgeDescriptor he, const FaceProperty& fp) : he(he), prop(fp) {}
+  HDSFace() : valid(true) {}
+  HDSFace(const FaceProperty& fp) : valid(true), prop(fp) {}
+  HDSFace(HalfedgeDescriptor he, const FaceProperty& fp) : valid(true), he(he), prop(fp) {}
+
+  bool valid;
   HalfedgeDescriptor he;
   FaceProperty prop;
 };
@@ -136,14 +142,37 @@ public:
   typedef typename HalfEdgeDataStructureTraits::edge_property_type edge_property_type;
   typedef typename HalfEdgeDataStructureTraits::face_property_type face_property_type;
 
-  typedef typename HalfEdgeDataStructureTraits::vertex_iterator vertex_iterator;
+  template <typename IteratorType, typename ValueType>
+  struct default_visitor {
+    typedef IteratorType iterator_type;
+    typedef ValueType value_type;
+    value_type operator()(iterator_type e, const graph_type*) { return *e; }
+    bool valid(iterator_type e, const graph_type* g) const {
+      return (*g)[*e].valid;
+    }
+  };
+  typedef default_visitor<typename HalfEdgeDataStructureTraits::vertex_iterator, vertex_descriptor> default_vertex_visitor;
+  typedef Iterator<graph_type, default_vertex_visitor> vertex_iterator;
   typedef const vertex_iterator const_vertex_iterator;
-  typedef typename HalfEdgeDataStructureTraits::edge_iterator edge_iterator;
+
+  typedef default_visitor<typename HalfEdgeDataStructureTraits::edge_iterator, edge_descriptor> default_edge_visitor;
+  typedef Iterator<graph_type, default_visitor<typename HalfEdgeDataStructureTraits::edge_iterator, edge_descriptor>> edge_iterator;
   typedef const edge_iterator const_edge_iterator;
-  typedef typename HalfEdgeDataStructureTraits::halfedge_iterator halfedge_iterator;
-  typedef const halfedge_iterator const_halfedge_iterator;
-  typedef typename HalfEdgeDataStructureTraits::face_iterator face_iterator;
-  typedef typename HalfEdgeDataStructureTraits::const_face_iterator const_face_iterator;
+
+  template <typename IteratorType>
+  struct default_face_visitor {
+    typedef IteratorType iterator_type;
+    typedef face_descriptor value_type;
+    face_descriptor operator()(iterator_type it, const graph_type* g) {
+      return *it;
+    }
+    bool valid(iterator_type it, const graph_type* g) {
+      unsigned int idx = (*g)[graph_bundle].face_index_map.at(*it);
+      return (*g)[graph_bundle].face_set.at(idx).valid;
+    }
+  };
+  typedef Iterator<graph_type, default_face_visitor<typename HalfEdgeDataStructureTraits::face_iterator>> face_iterator;
+  typedef Iterator<graph_type, default_face_visitor<typename HalfEdgeDataStructureTraits::const_face_iterator>> const_face_iterator;
 
   size_t size_of_vertices() const { return boost::num_vertices(g); }
   size_t size_of_halfedges() const { return boost::num_edges(g); }
@@ -153,9 +182,17 @@ public:
     return boost::add_vertex(vertex_type(vp), g);
   }
 
+  void remove_vertex(vertex_descriptor v) {
+    g[v].valid = false;
+  }
+
   pair<edge_descriptor, bool> add_edge(vertex_descriptor u, vertex_descriptor v,
                                        const EdgeProperty& ep) {
     return boost::add_edge(u, v, edge_type(ep), g);
+  }
+
+  void remove_edge(edge_descriptor e) {
+    g[e].valid = false;
   }
 
   face_descriptor add_face(edge_descriptor e, const FaceProperty& fp) {
@@ -165,6 +202,11 @@ public:
     g[graph_bundle].face_descriptors.push_back(descriptor);
     g[graph_bundle].face_index_map[descriptor] = g[graph_bundle].face_set.size() - 1;
     return descriptor;
+  }
+
+  void remove_face(face_descriptor f) {
+    unsigned int idx = g[graph_bundle].face_index_map.at(f);
+    g[graph_bundle].face_set[idx].valid = false;
   }
 
   vertex_property_type& operator[](vertex_descriptor v) {
@@ -181,30 +223,52 @@ public:
     return g[e].prop;
   }
 
-  pair<vertex_iterator, vertex_iterator> vertices() {
-    return boost::vertices(g);
+  face_property_type& operator[](face_descriptor f) {
+    unsigned int idx = g[graph_bundle].face_index_map.at(f);
+    return g[graph_bundle].face_set.at(idx).prop;
   }
 
-  pair<const_vertex_iterator, const_vertex_iterator> vertices() const {
-    return boost::vertices(g);
+  const face_property_type& operator[](face_descriptor f) const {
+    unsigned int idx = g[graph_bundle].face_index_map.at(f);
+    return g[graph_bundle].face_set.at(idx).prop;
   }
 
-  pair<edge_iterator, edge_iterator> edges() {
-    return boost::edges(g);
+  vertex_iterator vertices() {
+    auto p = boost::vertices(g);
+    while(p.first != p.second && !g[*p.first].valid) ++p.first;
+    return vertex_iterator(p.first, p.second, &g);
   }
 
-  pair<const_edge_iterator, const_edge_iterator> edges() const {
-    return boost::edges(g);
+  const_vertex_iterator vertices() const {
+    auto p = boost::vertices(g);
+    while(p.first != p.second && !g[*p.first].valid) ++p.first;
+    return vertex_iterator(p.first, p.second, &g);
   }
 
-  pair<face_iterator, face_iterator> faces() {
-    return make_pair(g[graph_bundle].face_descriptors.begin(),
-                     g[graph_bundle].face_descriptors.end());
+  edge_iterator edges() {
+    auto p = boost::edges(g);
+    while(p.first != p.second && !g[*p.first].valid) ++p.first;
+    return edge_iterator(p.first, p.second, &g);
   }
 
-  pair<const_face_iterator, const_face_iterator> faces() const {
-    return make_pair(g[graph_bundle].face_descriptors.cbegin(),
-                     g[graph_bundle].face_descriptors.cend());
+  const_edge_iterator edges() const {
+    auto p = boost::edges(g);
+    while(p.first != p.second && !g[*p.first].valid) ++p.first;
+    return edge_iterator(p.first, p.second, &g);
+  }
+
+  face_iterator faces() {
+    auto fit = g[graph_bundle].face_descriptors.begin();
+    auto fend = g[graph_bundle].face_descriptors.end();
+    while(fit != fend && !g[graph_bundle].face_set[g[graph_bundle].face_index_map.at(*fit)].valid) ++fit;
+    return face_iterator(fit, fend, &g);
+  }
+
+  const_face_iterator faces() const {
+    auto fit = g[graph_bundle].face_descriptors.cbegin();
+    auto fend = g[graph_bundle].face_descriptors.cend();
+    while(fit != fend && !g[graph_bundle].face_set[g[graph_bundle].face_index_map.at(*fit)].valid) ++fit;
+    return const_face_iterator(fit, fend, &g);
   }
 
   edge_descriptor next(edge_descriptor he) {
@@ -284,6 +348,15 @@ public:
     return boost::edge(u, v, g);
   }
 
+  bool collapse(vertex_descriptor u, vertex_descriptor v) {
+    edge_descriptor e;
+    bool exists;
+    tie(e, exists) = edge(u, v);
+    if(exists) {
+      edge_descriptor ef = flip(e);
+    } else return false;
+  }
+
   edge_descriptor halfedge(face_descriptor f) {
     unsigned int idx = g[graph_bundle].face_index_map[f];
     return g[graph_bundle].face_set[idx].he;
@@ -345,8 +418,8 @@ public:
     clog << "faces added." << endl;
 
     // fix the half edge binding for each vertex
-    vertex_iterator vit, vend;
-    for(tie(vit, vend) = boost::vertices(mesh.g); vit != vend; ++vit) {
+    for(vertex_iterator vit = mesh.vertices(); vit; ++vit) {
+      clog << *vit << endl;
       mesh.g[*vit].he =  *(out_edges(*vit, mesh.g).first);
     }
     clog << "half edge binding for vertices fixed." << endl;
@@ -416,27 +489,23 @@ istream& operator>>(istream& is, HalfEdgeDataStructure<VertexProperty, EdgePrope
 template <typename VertexProperty, typename EdgeProperty, typename FaceProperty>
 ostream& operator<<(ostream& os, const HalfEdgeDataStructure<VertexProperty, EdgeProperty, FaceProperty>& hds) {
   typedef HalfEdgeDataStructure<VertexProperty, EdgeProperty, FaceProperty> mesh_t;
-  typedef typename mesh_t::const_face_iterator const_face_iterator;
   typedef typename mesh_t::edge_circulator edge_circulator;
   typedef typename mesh_t::face_circulator face_circulator;
   typedef typename mesh_t::vertex_circulator vertex_circulator;
 
   os << hds.size_of_vertices() << " vertices: " << endl;
-  auto verts = hds.vertices();
-  for(auto it = verts.first; it != verts.second; ++it) {
+  for(auto it = hds.vertices(); it; ++it) {
     os << hds[*it] << "; ";
   }
   os << endl;
   os << hds.size_of_halfedges() << " edges: " << endl;
-  auto edges = hds.edges();
-  for(auto it = edges.first; it != edges.second; ++it) {
+  for(auto it = hds.edges(); it; ++it) {
     os << *it << "; ";
   }
   os << endl;
 
   os << "faces circulation, incident edges: " << endl;
-  const_face_iterator fit, fend;
-  for(tie(fit, fend) = hds.faces(); fit != fend; ++fit) {
+  for(auto fit = hds.faces(); fit; ++fit) {
     edge_circulator circ = hds.incident_edges(*fit);
     os << "face " << *fit << ": ";
     while(circ) {
@@ -447,7 +516,7 @@ ostream& operator<<(ostream& os, const HalfEdgeDataStructure<VertexProperty, Edg
   }
 
   os << "faces circulation, incident vertices: " << endl;
-  for(tie(fit, fend) = hds.faces(); fit != fend; ++fit) {
+  for(auto fit = hds.faces(); fit; ++fit) {
     vertex_circulator circ = hds.incident_vertices(*fit);
     os << "face " << *fit << ": ";
     while(circ) {
@@ -458,7 +527,7 @@ ostream& operator<<(ostream& os, const HalfEdgeDataStructure<VertexProperty, Edg
   }
 
   os << "vertex circulation, incident edges: " << endl;
-  for(auto vit = verts.first; vit != verts.second; ++vit) {
+  for(auto vit = hds.vertices(); vit; ++vit) {
     edge_circulator circ = hds.incident_edges(*vit);
     os << "vertex " << *vit << ": ";
     while(circ) {
@@ -469,7 +538,7 @@ ostream& operator<<(ostream& os, const HalfEdgeDataStructure<VertexProperty, Edg
   }
 
   os << "vertex circulation, incident faces: " << endl;
-  for(auto vit = verts.first; vit != verts.second; ++vit) {
+  for(auto vit = hds.vertices(); vit; ++vit) {
     face_circulator circ = hds.incident_faces(*vit);
     os << "vertex " << *vit << ": ";
     while(circ) {
@@ -480,7 +549,7 @@ ostream& operator<<(ostream& os, const HalfEdgeDataStructure<VertexProperty, Edg
   }
 
   os << "vertex circulation, neighboring vertices: " << endl;
-  for(auto vit = verts.first; vit != verts.second; ++vit) {
+  for(auto vit = hds.vertices(); vit; ++vit) {
     vertex_circulator circ = hds.neighbor_vertices(*vit);
     os << "vertex " << *vit << ": ";
     while(circ) {

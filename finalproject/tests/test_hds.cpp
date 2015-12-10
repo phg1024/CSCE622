@@ -32,5 +32,9 @@ int main(int argc, char** argv) {
   fin >> hds;
 
   cout << hds << endl;
+
+  auto vit = hds.vertices();
+  hds.remove_vertex(*vit);
+  cout << hds << endl;
   return 0;
 }

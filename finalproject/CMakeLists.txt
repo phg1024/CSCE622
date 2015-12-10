@@ -34,10 +34,4 @@ link_directories(${LINK_DIRECTORIES} ${GLUT_LIBRARY_DIRS})
 
 add_library(meshloader meshloader.cpp)
 
-add_executable(mesh_simplification mesh_simplification.cpp)
-target_link_libraries(mesh_simplification meshloader ${OPENGL_LIBRARIES} ${GLEW_LIBRARIES} ${GLUT_LIBRARIES})
-
-include( CGAL_CreateSingleSourceCGALProgram )
-create_single_source_cgal_program( "mesh_simplification_cgal.cpp" )
-
 add_subdirectory(tests)

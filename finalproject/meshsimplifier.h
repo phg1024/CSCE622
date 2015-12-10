@@ -29,17 +29,13 @@ public:
 
     // compute face normal for each face
     face_normal_map face_normals;
-    face_iterator fbegin, fend;
-    tie(fbegin, fend) = mesh.faces();
-    for(auto fit = fbegin; fit != fend; ++fit) {
+    for(auto fit = mesh.faces(); fit; ++fit) {
       face_normals[*fit] = face_normal(*fit, mesh);
     }
 
     // compute QEF for each vertex
     std::unordered_map<vertex_descriptor, double> QEFs;
-    vertex_iterator vbegin, vend;
-    tie(vbegin, vend) = mesh.vertices();
-    for(auto vit = vbegin; vit != vend; ++vit) {
+    for(auto vit = mesh.vertices(); vit; ++vit) {
       QEFs[*vit] = quadratic_error_function(*vit, face_normals, mesh);
     }
 
