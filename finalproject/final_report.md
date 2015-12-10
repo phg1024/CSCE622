@@ -203,6 +203,7 @@ After executing the following command:
 ./build_hds cube.obj
 ```
 where `cube.obj` is a cube object
+
 <img align="center" src="cube.png" alt="Drawing" style="width: 320px;"/>
 
 The output is as follows:
