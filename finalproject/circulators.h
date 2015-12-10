@@ -1,15 +1,18 @@
 #ifndef CIRCULATORS_H
 #define CIRCULATORS_H
 
-template <class MeshType, typename Visitor,
-          typename CirculationPolicy=std::function<typename MeshType::edge_descriptor(typename MeshType::edge_descriptor, const typename MeshType::graph_type&)>>
+#include <functional>
+
+template <class MeshType, typename Visitor>
 class EdgeCirculator {
 public:
   typedef MeshType mesh_type;
   typedef typename MeshType::graph_type graph_type;
   typedef typename MeshType::edge_descriptor edge_descriptor;
-  EdgeCirculator(edge_descriptor he, const graph_type& g, CirculationPolicy policy)
-    : cycled(false), he(he), cur(he), g(g), policy(policy) {}
+  typedef std::function<edge_descriptor(edge_descriptor, const graph_type&)> CirculationStrategy;
+
+  EdgeCirculator(edge_descriptor he, const graph_type& g, CirculationStrategy strategy)
+    : cycled(false), he(he), cur(he), g(g), strategy(strategy) {}
 
   EdgeCirculator& operator=(EdgeCirculator other) {
     std::swap(*this, other);
@@ -21,14 +24,14 @@ public:
   }
 
   EdgeCirculator& operator++() {
-    cur = policy(cur, g);
+    cur = strategy(cur, g);
     cycled = (cur == he);
     return (*this);
   }
 
   EdgeCirculator operator++(int) {
     EdgeCirculator cpy = *this;
-    cur = policy(cur, g);
+    cur = strategy(cur, g);
     cycled = (cur == he);
     return cpy;
   }
@@ -41,7 +44,7 @@ private:
   edge_descriptor cur;
   const graph_type& g;
   Visitor visitor;
-  CirculationPolicy policy;
+  CirculationStrategy strategy;
 };
 
 #endif  // CIRCULATORS_H

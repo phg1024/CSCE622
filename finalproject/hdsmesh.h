@@ -69,10 +69,10 @@ struct HDSFace {
 struct NullType {};
 
 template <typename VertexProperty, typename EdgeProperty, typename FaceProperty>
-struct DefaultHalfedgeDataStructureTraits {
+struct DefaultHDSTraits {
 
   template <typename VP, typename EP, typename GP>
-  using g = adjacency_list<listS, listS, bidirectionalS, VP, EP, GP>;
+  using g = adjacency_list<listS, vecS, bidirectionalS, VP, EP, GP>;
 
   typedef graph_traits<g<NullType, NullType, NullType>>::vertex_descriptor vertex_descriptor;
   typedef graph_traits<g<NullType, NullType, NullType>>::edge_descriptor edge_descriptor;
@@ -111,38 +111,37 @@ struct DefaultHalfedgeDataStructureTraits {
 };
 
 template <typename VertexProperty, typename EdgeProperty, typename FaceProperty,
-          typename HalfEdgeDataStructureTraits=DefaultHalfedgeDataStructureTraits<VertexProperty, EdgeProperty, FaceProperty>>
+          typename Traits=DefaultHDSTraits<VertexProperty, EdgeProperty, FaceProperty>>
 class HalfEdgeDataStructure {
 public:
   HalfEdgeDataStructure() {}
 
-  typedef HalfEdgeDataStructure<VertexProperty, EdgeProperty, FaceProperty, HalfEdgeDataStructureTraits> self;
+  typedef HalfEdgeDataStructure<VertexProperty, EdgeProperty, FaceProperty, Traits> self;
 
-  typedef typename HalfEdgeDataStructureTraits::graph_type graph_type;
-  typedef HalfEdgeDataStructureTraits traits;
+  typedef typename Traits::graph_type graph_type;
 
   typedef typename graph_type::directed_category directed_category;
   typedef typename graph_type::edge_parallel_category edge_parallel_category;
   typedef typename graph_type::traversal_category traversal_category;
 
-  typedef typename HalfEdgeDataStructureTraits::vertex_descriptor vertex_descriptor;
-  typedef typename HalfEdgeDataStructureTraits::edge_descriptor edge_descriptor;
-  typedef typename HalfEdgeDataStructureTraits::halfedge_descriptor halfedge_descriptor;
-  typedef typename HalfEdgeDataStructureTraits::face_descriptor face_descriptor;
+  typedef typename Traits::vertex_descriptor vertex_descriptor;
+  typedef typename Traits::edge_descriptor edge_descriptor;
+  typedef typename Traits::halfedge_descriptor halfedge_descriptor;
+  typedef typename Traits::face_descriptor face_descriptor;
 
-  typedef typename HalfEdgeDataStructureTraits::face_descriptor_hasher face_descriptor_hasher;
+  typedef typename Traits::face_descriptor_hasher face_descriptor_hasher;
 
-  typedef typename HalfEdgeDataStructureTraits::vertex_type vertex_type;
-  typedef typename HalfEdgeDataStructureTraits::edge_type edge_type;
-  typedef typename HalfEdgeDataStructureTraits::face_type face_type;
+  typedef typename Traits::vertex_type vertex_type;
+  typedef typename Traits::edge_type edge_type;
+  typedef typename Traits::face_type face_type;
 
   typedef size_t vertices_size_type;
   typedef size_t edges_size_type;
   typedef size_t degree_size_type;
 
-  typedef typename HalfEdgeDataStructureTraits::vertex_property_type vertex_property_type;
-  typedef typename HalfEdgeDataStructureTraits::edge_property_type edge_property_type;
-  typedef typename HalfEdgeDataStructureTraits::face_property_type face_property_type;
+  typedef typename Traits::vertex_property_type vertex_property_type;
+  typedef typename Traits::edge_property_type edge_property_type;
+  typedef typename Traits::face_property_type face_property_type;
 
   template <typename IteratorType, typename ValueType>
   struct default_visitor {
@@ -153,12 +152,12 @@ public:
       return (*g)[*e].valid;
     }
   };
-  typedef default_visitor<typename HalfEdgeDataStructureTraits::vertex_iterator, vertex_descriptor> default_vertex_visitor;
+  typedef default_visitor<typename Traits::vertex_iterator, vertex_descriptor> default_vertex_visitor;
   typedef Iterator<graph_type, default_vertex_visitor> vertex_iterator;
   typedef const vertex_iterator const_vertex_iterator;
 
-  typedef default_visitor<typename HalfEdgeDataStructureTraits::edge_iterator, edge_descriptor> default_edge_visitor;
-  typedef Iterator<graph_type, default_visitor<typename HalfEdgeDataStructureTraits::edge_iterator, edge_descriptor>> edge_iterator;
+  typedef default_visitor<typename Traits::edge_iterator, edge_descriptor> default_edge_visitor;
+  typedef Iterator<graph_type, default_visitor<typename Traits::edge_iterator, edge_descriptor>> edge_iterator;
   typedef const edge_iterator const_edge_iterator;
 
   template <typename IteratorType>
@@ -173,8 +172,8 @@ public:
       return (*g)[graph_bundle].face_set.at(idx).valid;
     }
   };
-  typedef Iterator<graph_type, default_face_visitor<typename HalfEdgeDataStructureTraits::face_iterator>> face_iterator;
-  typedef Iterator<graph_type, default_face_visitor<typename HalfEdgeDataStructureTraits::const_face_iterator>> const_face_iterator;
+  typedef Iterator<graph_type, default_face_visitor<typename Traits::face_iterator>> face_iterator;
+  typedef Iterator<graph_type, default_face_visitor<typename Traits::const_face_iterator>> const_face_iterator;
 
   size_t size_of_vertices() const { return boost::num_vertices(g); }
   size_t size_of_halfedges() const { return boost::num_edges(g); }
