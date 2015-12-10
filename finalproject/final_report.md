@@ -274,7 +274,7 @@ vertex 7: 3; 0; 4; 5; 6;
 ##### Performance test
 A preliminary performance test on the HDS construction speed is conducted to compare the performance of the simplified HDS implementation and the HDS provided in CGAL. The benchmark data is shown in the table below.
 
-Mesh Name | #faces | #vertices | BGL-HDS | CGAL |
+| Mesh Name | #faces | #vertices | BGL-HDS | CGAL |
 |---|---|---|---|---|
 | Bunny | 11048 | 5526 | 0.013 s   |  0.004 s |
 | Big guy | 46400 | 23202 | 0.046 s  |  0.014 s |
